@@ -1,9 +1,9 @@
 /**
- * 
+ * Tim Parsons
+ * Copyright 2013
  */
-package com.parsons.dao.generic.impl;
+package com.parsons.dao.util;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.UUID;
@@ -14,32 +14,18 @@ import org.slf4j.LoggerFactory;
 import com.parsons.dao.util.constant.SQLConstants;
 
 /**
- * Base DAO class holding connection and common methods
- * 
  * @author Tim
  *
  */
-public class BaseDAOImpl {
-	private Connection connection;
-	private static final Logger logger = LoggerFactory.getLogger(BaseDAOImpl.class);
-
-	public BaseDAOImpl(Connection connection) {
-		this.connection = connection;
-	}
+public class DBUtil {
 	
-	public Connection getConnection() {
-		return connection;
-	}
+	private static final Logger logger = LoggerFactory.getLogger(DBUtil.class);
 	
-	public void setConnection(Connection connection) {
-		this.connection = connection;
-	}
-	
-	public String generateUUID() {
+	public static String generateUUID() {
 		return UUID.randomUUID().toString();
 	}
 	
-	public void closeStatement(PreparedStatement ps) {
+	public static void closeStatement(PreparedStatement ps) {
 		try {
 			if(ps != null && !ps.isClosed()) {
 				ps.close();
@@ -56,7 +42,7 @@ public class BaseDAOImpl {
 	 * @param sql - StringBuilder SQL statement
 	 * @return FALSE to indicate that the next condition to be added is not the first one
 	 */
-	public boolean addAndCondition(String columnName, boolean isFirst, StringBuilder sql) {
+	public static boolean addAndCondition(String columnName, boolean isFirst, StringBuilder sql) {
 		if(!isFirst) {
 			sql.append(SQLConstants.SQL_AND);
 		}
@@ -71,7 +57,7 @@ public class BaseDAOImpl {
 	 * @param sql - StringBuilder SQL statement
 	 * @return FALSE to indicate that the next condition to be added is not the first one
 	 */
-	public boolean addOrCondition(String columnName, boolean isFirst, StringBuilder sql) {
+	public static boolean addOrCondition(String columnName, boolean isFirst, StringBuilder sql) {
 		if(!isFirst) {
 			sql.append(SQLConstants.SQL_OR);
 		}
