@@ -2,7 +2,7 @@ package com.parsons.dao.generic;
 
 import java.io.Serializable;
 
-import com.parsons.dao.exception.DAOException;
+import com.parsons.dao.exception.HyperDAOException;
 
 
 /**
@@ -23,32 +23,32 @@ public interface GenericDAO <T, ID extends Serializable> {
      * 
      * @param entity of type {@literal T}
      * @return an identifier to the new instance persisted into the database
-     * @throws DAOException 
+     * @throws HyperDAOException 
      */
-	<S extends T> S create(T entity) throws DAOException;
+	<S extends T> S create(T entity) throws HyperDAOException;
     
     /**
      * Persist all given entities into the database
      * @param entities
      * @return a list of objects saved to the database
      */
-    Iterable<T> create(Iterable<? extends T> entities) throws DAOException;
+    Iterable<T> create(Iterable<? extends T> entities) throws HyperDAOException;
     
     /** 
      * Persist the entity object into database 
      * 
      * @param entity of type {@literal T}
      * @return an identifier to the new instance persisted into the database
-     * @throws DAOException 
+     * @throws HyperDAOException 
      */
-	<S extends T> S update(T entity) throws DAOException;
+	<S extends T> S update(T entity) throws HyperDAOException;
     
     /**
      * Persist all given entities into the database
      * @param entities
      * @return a list of objects saved to the database
      */
-    Iterable<T> update(Iterable<? extends T> entities) throws DAOException;
+    Iterable<T> update(Iterable<? extends T> entities) throws HyperDAOException;
 
     /**
      * Retrieve an object that was previously persisted to the database using
@@ -57,7 +57,7 @@ public interface GenericDAO <T, ID extends Serializable> {
      * @param id - an identifier to the record in the database
      * @return an instance of {@literal T}
      */
-    T read(ID id) throws DAOException;
+    T read(ID id) throws HyperDAOException;
     
     /**
      * Retrieve an object that was previously persisted to the database using
@@ -65,33 +65,33 @@ public interface GenericDAO <T, ID extends Serializable> {
      * @param model - search object of type {@literal T}
      * @return
      */
-    Iterable<T> read(T model) throws DAOException;
+    Iterable<T> read(T model) throws HyperDAOException;
     
     /**
      * Retrieve all records of type {@literal T} that have been previously persisted into the database
      * @return a list of all {@literal T}
      */
-    Iterable<T> readAll() throws DAOException;
+    Iterable<T> readAll() throws HyperDAOException;
 
     /** 
      * Remove an object from persistent storage in the database 
      * 
      * @param entity of type {@literal T}
      */
-    void delete(T entity) throws DAOException;
+    void delete(T entity) throws HyperDAOException;
     
     /**
      * Remove a list of objects from persistent storage in the database
      * @param entities - list of objects to remove
-     * @throws DAOException
+     * @throws HyperDAOException
      */
-    void delete(Iterable<? extends T> entities) throws DAOException;
+    void delete(Iterable<? extends T> entities) throws HyperDAOException;
     
     /**
      * Remove all records of type {@literal T} that have been previously persisted into the database
-     * @throws DAOException
+     * @throws HyperDAOException
      */
-    void deleteAll() throws DAOException;
+    void deleteAll() throws HyperDAOException;
     
     /**
      * Determine if the given entity of type {@literal T} is valid to be persisted into the database

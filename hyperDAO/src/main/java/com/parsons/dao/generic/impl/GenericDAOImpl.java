@@ -23,7 +23,7 @@ import com.parsons.dao.generic.model.Column;
 import com.parsons.dao.generic.model.ForeignKey;
 import com.parsons.dao.generic.model.Table;
 import com.parsons.dao.generic.service.TableRetrievalService;
-import com.parsons.dao.exception.DAOException;
+import com.parsons.dao.exception.HyperDAOException;
 import com.parsons.dao.util.DateUtil;
 import com.parsons.dao.util.constant.SQLConstants;
 
@@ -50,10 +50,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S extends T> S create(T entity) throws DAOException {
+	public <S extends T> S create(T entity) throws HyperDAOException {
 		logger.debug("Entry into create with entity: "+entity);
 		if(!isValid(entity)) {
-			throw new DAOException("Cannot create entity that is not valid");
+			throw new HyperDAOException("Cannot create entity that is not valid");
 		}
 		
 		if(table == null) {
@@ -68,10 +68,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			logger.error("Unable to save entity: " + entity, e);
-			throw new DAOException("Unable to save entity: " + entity, e);
+			throw new HyperDAOException("Unable to save entity: " + entity, e);
 		} catch (Exception e) {
 			logger.error("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
-			throw new DAOException("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
+			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
 		} finally {
 			closeStatement(ps);
 		}
@@ -84,7 +84,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public Iterable<T> create(Iterable<? extends T> entities) throws DAOException {
+	public Iterable<T> create(Iterable<? extends T> entities) throws HyperDAOException {
 		logger.debug("Entry into update(List) with entities: "+entities);
 		
 		if(table == null && entities != null) {
@@ -110,10 +110,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			ps.executeBatch();
 		} catch (SQLException e) {
 			logger.error("Unable to save entities: "+entities, e);
-			throw new DAOException("Unable to save entities: "+entities, e);
+			throw new HyperDAOException("Unable to save entities: "+entities, e);
 		} catch (Exception e) {
 			logger.error("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
-			throw new DAOException("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
+			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
 		} finally {
 			closeStatement(ps);
 		}
@@ -125,10 +125,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S extends T> S update(T entity) throws DAOException {
+	public <S extends T> S update(T entity) throws HyperDAOException {
 		logger.debug("Entry into update with entity: "+entity);
 		if(!isValid(entity)) {
-			throw new DAOException("Cannot update entity that is not valid");
+			throw new HyperDAOException("Cannot update entity that is not valid");
 		}
 		
 		if(table == null) {
@@ -146,10 +146,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			logger.debug("Updated "+updatedCount+" records for entity: "+entity);
 		} catch (SQLException e) {
 			logger.error("Unable to save entity: " + entity, e);
-			throw new DAOException("Unable to save entity: " + entity, e);
+			throw new HyperDAOException("Unable to save entity: " + entity, e);
 		} catch (Exception e) {
 			logger.error("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
-			throw new DAOException("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
+			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
 		} finally {
 			closeStatement(ps);
 		}
@@ -163,7 +163,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public Iterable<T> update(Iterable<? extends T> entities) throws DAOException {
+	public Iterable<T> update(Iterable<? extends T> entities) throws HyperDAOException {
 		logger.debug("Entry into update with entities: "+entities);
 		if(table == null && entities != null) {
 			Iterator<T> iterator = (Iterator<T>) entities.iterator();
@@ -189,10 +189,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			ps.executeBatch();
 		} catch (SQLException e) {
 			logger.error("Unable to save entities: " + entities, e);
-			throw new DAOException("Unable to save entities: " + entities, e);
+			throw new HyperDAOException("Unable to save entities: " + entities, e);
 		} catch (Exception e) {
 			logger.error("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
-			throw new DAOException("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
+			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
 		} finally {
 			closeStatement(ps);
 		}
@@ -206,10 +206,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public T read(ID id) throws DAOException {
+	public T read(ID id) throws HyperDAOException {
 		logger.debug("Entry into read with id: "+id);
 		if(table == null ) {
-			throw new DAOException("Table relation is not set up");
+			throw new HyperDAOException("Table relation is not set up");
 		}
 		
 		StringBuilder sql = new StringBuilder(table.getEagerReadSQL());
@@ -232,10 +232,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			}
 		} catch (SQLException e) {
 			logger.error("Unable to retrieve entity by id: " + id, e);
-			throw new DAOException("Unable to retrieve entity by id: " + id, e);
+			throw new HyperDAOException("Unable to retrieve entity by id: " + id, e);
 		} catch(Exception e) {
 			logger.error("Unable to retrieve values to populate preparedStatement for id: "+id, e);
-			throw new DAOException("Unable to retrieve values to populate preparedStatement for id: "+id, e);
+			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for id: "+id, e);
 		} finally {
 			closeStatement(ps);
 		}
@@ -249,10 +249,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public Iterable<T> read(T model) throws DAOException {
+	public Iterable<T> read(T model) throws HyperDAOException {
 		logger.debug("Entry into read with model: "+model);
 		if(table == null && model == null) {
-			throw new DAOException("Table relation is not set up");
+			throw new HyperDAOException("Table relation is not set up");
 		} else if(table == null && model != null) {
 			registerTable((Class<T>) model.getClass());
 		}
@@ -287,10 +287,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			logger.debug("Found "+(retList == null ? 0 : retList.size())+" entities to return");
 		} catch (SQLException e) {
 			logger.error("Unable to retrieve entity by model: " + model, e);
-			throw new DAOException("Unable to retrieve entity by model: " + model, e);
+			throw new HyperDAOException("Unable to retrieve entity by model: " + model, e);
 		} catch (Exception e) {
 			logger.error("Unable to retrieve values to populate preparedStatement for model: "+model, e);
-			throw new DAOException("Unable to retrieve values to populate preparedStatement for model: "+model, e);
+			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for model: "+model, e);
 		} finally {
 			closeStatement(ps);
 		}
@@ -303,7 +303,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 * @see com.parsons.reciply.dao.base.GenericDAO#readAll()
 	 */
 	@Override
-	public Iterable<T> readAll() throws DAOException {
+	public Iterable<T> readAll() throws HyperDAOException {
 		logger.debug("Entry into readAll())");
 		T model = null;
 		return read(model);
@@ -313,7 +313,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 * @see com.parsons.reciply.dao.base.GenericDAO#delete(java.lang.Object)
 	 */
 	@Override
-	public void delete(T entity) throws DAOException {
+	public void delete(T entity) throws HyperDAOException {
 		logger.debug("Entry into delete with entity: "+entity);
 		StringBuilder sql = new StringBuilder(table.getDeleteSQL());
 		
@@ -328,10 +328,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			logger.debug("Deleted: "+numDeleted+" entities based on model: "+entity);
 		} catch (SQLException e) {
 			logger.error("Unable to save entity: " + entity, e);
-			throw new DAOException("Unable to save entity: " + entity, e);
+			throw new HyperDAOException("Unable to save entity: " + entity, e);
 		} catch (Exception e) {
 			logger.error("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
-			throw new DAOException("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
+			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
 		} finally {
 			closeStatement(ps);
 		}
@@ -342,7 +342,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 * @see com.parsons.reciply.dao.base.GenericDAO#delete(java.lang.Iterable)
 	 */
 	@Override
-	public void delete(Iterable<? extends T> entities) throws DAOException {
+	public void delete(Iterable<? extends T> entities) throws HyperDAOException {
 		logger.debug("Entry into delete with entities: "+entities.toString());
 		StringBuilder sql = new StringBuilder(table.getDeleteSQL());
 		
@@ -364,10 +364,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			
 		} catch (SQLException e) {
 			logger.error("Unable to save entity: " + entities, e);
-			throw new DAOException("Unable to save entity: " + entities, e);
+			throw new HyperDAOException("Unable to save entity: " + entities, e);
 		} catch (Exception e) {
 			logger.error("Unable to retrieve values to populate preparedStatement for entity: "+entities, e);
-			throw new DAOException("Unable to retrieve values to populate preparedStatement for entity: "+entities, e);
+			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entity: "+entities, e);
 		}  finally {
 			closeStatement(ps);
 		}
@@ -378,7 +378,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 * @see com.parsons.reciply.dao.base.GenericDAO#deleteAll()
 	 */
 	@Override
-	public void deleteAll() throws DAOException {
+	public void deleteAll() throws HyperDAOException {
 		logger.debug("Entry into deleteAll");
 		PreparedStatement ps = null;
 		try {
@@ -389,7 +389,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			logger.debug("Deleted "+numDeleted+" entities from table: "+table.getName());
 		} catch (SQLException e) {
 			logger.error("Unable to delete all entities", e);
-			throw new DAOException("Unable to delete all entities", e);
+			throw new HyperDAOException("Unable to delete all entities", e);
 		} finally {
 			closeStatement(ps);
 		}

@@ -6,7 +6,7 @@ package com.parsons.dao.exception;
  * Reciply Data level exception
  *
  */
-public class DAOException extends Exception{
+public class HyperDAOException extends Exception{
 
 	/**
 	 * 
@@ -16,19 +16,19 @@ public class DAOException extends Exception{
 	/**
 	 * 
 	 */
-	public DAOException() {
+	public HyperDAOException() {
 		// TODO Auto-generated constructor stub
 	}
 	
-	public DAOException(Throwable cause) {
+	public HyperDAOException(Throwable cause) {
 		super(cause);
 	}
 	
-	public DAOException(String message) {
+	public HyperDAOException(String message) {
 		super(message);
 	}
 	
-	public DAOException(String message, Throwable cause) {
+	public HyperDAOException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
