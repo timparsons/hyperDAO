@@ -15,7 +15,8 @@ public class Table {
 	private List<Column> columns;
 	private List<ForeignKey> foreignKeys;
 	private String createSQL;
-	private String readSQL;
+	private String eagerReadSQL;
+	private String lazyReadSQL;
 	private String updateSQL;
 	private String deleteSQL;
 	private Class<?> tableClass;
@@ -50,11 +51,41 @@ public class Table {
 	public void setCreateSQL(String createSQL) {
 		this.createSQL = createSQL;
 	}
-	public String getReadSQL() {
-		return readSQL;
+	
+	/**
+	 * Returns a SQL statement that will fetch all of the 
+	 * {@link Table} information, as well as the information from foreign keys
+	 * 
+	 * @return a {@link String} SQL statement to retrieve all information related to the {@link Table}
+	 */
+	public String getEagerReadSQL() {
+		return eagerReadSQL;
 	}
-	public void setReadSQL(String readSQL) {
-		this.readSQL = readSQL;
+	
+	/**
+	 * Set the SQL statement that will eagerly retrieve data from the {@link Table}
+	 * @param eagerReadSQL - eager SQL to set
+	 */
+	public void setEagerReadSQL(String eagerReadSQL) {
+		this.eagerReadSQL = eagerReadSQL;
+	}
+	
+	/**
+	 * Returns a SQL statement that will fetch only the {@link Table} 
+	 * information but not any information from foreign keys
+	 * 
+	 * @return a {@link String} SQL statement to retrieve information directly on the {@link Table}
+	 */
+	public String getLazyReadSQL() {
+		return lazyReadSQL;
+	}
+	
+	/**
+	 * Set the SQL statement that will lazily retrieve data from the {@link Table}
+	 * @param lazyReadSQL - lazy SQL to set
+	 */
+	public void setLazyReadSQL(String lazyReadSQL) {
+		this.lazyReadSQL = lazyReadSQL;
 	}
 	public String getUpdateSQL() {
 		return updateSQL;
@@ -79,7 +110,7 @@ public class Table {
 	public String toString() {
 		return "Table [name=" + name + ", primaryKey=" + primaryKey
 				+ ", columns=" + columns + ", foreignKeys=" + foreignKeys
-				+ ", createSQL=" + createSQL + ", readSQL=" + readSQL
+				+ ", createSQL=" + createSQL + ", readSQL=" + eagerReadSQL
 				+ ", updateSQL=" + updateSQL + ", deleteSQL=" + deleteSQL
 				+ ", tableClass=" + tableClass + "]";
 	}
@@ -97,7 +128,7 @@ public class Table {
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result
 				+ ((primaryKey == null) ? 0 : primaryKey.hashCode());
-		result = prime * result + ((readSQL == null) ? 0 : readSQL.hashCode());
+		result = prime * result + ((eagerReadSQL == null) ? 0 : eagerReadSQL.hashCode());
 		result = prime * result
 				+ ((updateSQL == null) ? 0 : updateSQL.hashCode());
 		result = prime * result + ((tableClass == null) ? 0 : tableClass.hashCode());
@@ -142,10 +173,10 @@ public class Table {
 				return false;
 		} else if (!primaryKey.equals(other.primaryKey))
 			return false;
-		if (readSQL == null) {
-			if (other.readSQL != null)
+		if (eagerReadSQL == null) {
+			if (other.eagerReadSQL != null)
 				return false;
-		} else if (!readSQL.equals(other.readSQL))
+		} else if (!eagerReadSQL.equals(other.eagerReadSQL))
 			return false;
 		if (updateSQL == null) {
 			if (other.updateSQL != null)

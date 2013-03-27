@@ -7,11 +7,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedList;
 import java.util.TreeSet;
+
+import javax.persistence.Id;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,10 +164,10 @@ public class TableRetrievalService {
 	}
 	
 	/**
-	 * Given a method of a model class, check if the method contains JPA @Column annotations.
+	 * Given a method of a model class, check if the method contains JPA {@link javax.persistence.Column} annotations.
 	 * If so, then retrieve the column name and data type.
 	 * 
-	 * Also check if the column is the primary key by checking for JPA @Id annotation.
+	 * Also check if the column is the primary key by checking for JPA {@link Id} annotation.
 	 * 
 	 * @param method
 	 * @param tableClass 
@@ -207,11 +207,9 @@ public class TableRetrievalService {
 		try {
 			setMethod = tableClass.getMethod(setMethodName, method.getReturnType());
 		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.warn("Unable to retrieve set method", e);
 		} catch (NoSuchMethodException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.warn("Unable to retrieve set method", e);
 		}
 		return setMethod;
 	}
@@ -379,7 +377,7 @@ public class TableRetrievalService {
 	private static void deriveSQL() {
 		for(Table table : tables.values()) {
 			if(table.getCreateSQL() == null || table.getUpdateSQL() == null 
-					|| table.getReadSQL() == null || table.getDeleteSQL() == null) {
+					|| table.getEagerReadSQL() == null || table.getDeleteSQL() == null) {
 				deriveCreateUpdateSQL(table);
 				deriveReadSQL(table);
 				deriveDeleteSQL(table);
@@ -456,16 +454,39 @@ public class TableRetrievalService {
 	 * @param table
 	 */
 	private static void deriveReadSQL(Table table) {
+		deriveLazyReadSQL(table);
+		deriveEagerReadSQL(table);
+	}
+
+	/**
+	 * @param table
+	 */
+	private static void deriveLazyReadSQL(Table table) {
 		StringBuilder readSQL = new StringBuilder(SQLConstants.SQL_SELECT);
 		
-		addSelectItems(table, table.getForeignKeys(), table.getName(), null, readSQL, true);
+		addSelectItems(table, null, table.getName(), null, readSQL, true, null);
+		
+		readSQL.append(SQLConstants.SQL_FROM);
+		readSQL.append(table.getName());
+		
+		table.setLazyReadSQL(readSQL.toString());
+	}
+
+	/**
+	 * @param table
+	 */
+	private static void deriveEagerReadSQL(Table table) {
+
+		StringBuilder readSQL = new StringBuilder(SQLConstants.SQL_SELECT);
+		
+		addSelectItems(table, table.getForeignKeys(), table.getName(), null, readSQL, true, null);
 		
 		readSQL.append(SQLConstants.SQL_FROM);
 		readSQL.append(table.getName());
 		
 		addInnerJoins(table, table.getForeignKeys(), table.getName(), readSQL);
 		
-		table.setReadSQL(readSQL.toString());
+		table.setEagerReadSQL(readSQL.toString());
 	}
 
 	/**
@@ -476,7 +497,17 @@ public class TableRetrievalService {
 	 * @param table
 	 * @param name
 	 */
-	private static void addSelectItems(Table table, List<ForeignKey> foreignKeys, String tableAlias, String columnAliasPrefix, StringBuilder readSQL, boolean firstSelect) {
+	private static void addSelectItems(Table table, List<ForeignKey> foreignKeys, String tableAlias, String columnAliasPrefix, StringBuilder readSQL, boolean firstSelect, List<String> usedTableAliases) {
+		
+		if(usedTableAliases != null && usedTableAliases.contains(tableAlias)) {
+			return;
+		} else {
+			if(usedTableAliases == null) {
+				usedTableAliases = new ArrayList<String>();
+			}
+			usedTableAliases.add(tableAlias);
+		}
+		
 		String tableAliasWithDot = tableAlias+".";
 		
 		if(!firstSelect) {
@@ -502,7 +533,7 @@ public class TableRetrievalService {
 			for(ForeignKey fk : foreignKeys) {
 				String fkTableAlias = getFkTableAlias(table, fk);
 				String fkColumnAliasPrefix = getFkColumnPrefix(table, fk);
-				addSelectItems(fk.getReferenceTable(), determineKeysToInclude(fk, table), fkTableAlias, fkColumnAliasPrefix, readSQL, false);
+				addSelectItems(fk.getReferenceTable(), determineKeysToInclude(fk, table), fkTableAlias, fkColumnAliasPrefix, readSQL, false, usedTableAliases);
 			}
 		}
 	}

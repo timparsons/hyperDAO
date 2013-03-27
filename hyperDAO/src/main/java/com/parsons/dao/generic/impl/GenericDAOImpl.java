@@ -212,7 +212,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			throw new DAOException("Table relation is not set up");
 		}
 		
-		StringBuilder sql = new StringBuilder(table.getReadSQL());
+		StringBuilder sql = new StringBuilder(table.getEagerReadSQL());
 		
 		sql.append(SQLConstants.SQL_WHERE);
 		sql.append(table.getPrimaryKey().getColumnName());
@@ -228,7 +228,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 			ResultSet rs = ps.executeQuery();
 			if(rs.next()) {
 				logger.debug("Populating entity");
-				entity = (T) populateEntity(rs, table.getName(), null, table);
+				entity = (T) populateEntity(rs, table.getName(), null, table, null);
 			}
 		} catch (SQLException e) {
 			logger.error("Unable to retrieve entity by id: " + id, e);
@@ -258,7 +258,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 		}
 		List<T> retList = null;
 		
-		StringBuilder sql = new StringBuilder(table.getReadSQL());
+		StringBuilder sql = new StringBuilder(table.getEagerReadSQL());
 		
 		PreparedStatement ps = null;
 		try {
@@ -278,7 +278,10 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 				if(retList == null) {
 					retList = new ArrayList<T>();
 				}
-				retList.add((T) populateEntity(rs, table.getName(), null, table));
+				T entity = (T) populateEntity(rs, table.getName(), null, table, null);
+				if(entity != null) {
+					retList.add(entity);
+				}
 			}
 			
 			logger.debug("Found "+(retList == null ? 0 : retList.size())+" entities to return");
@@ -420,8 +423,17 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 	 * @throws SecurityException 
 	 * @throws IllegalArgumentException 
 	 */
-	protected Object populateEntity(ResultSet rs, String tableAlias, String columnAliasPrefix, Table table) throws SQLException, InstantiationException, IllegalAccessException, IllegalArgumentException, SecurityException, InvocationTargetException, NoSuchMethodException {
+	protected Object populateEntity(ResultSet rs, String tableAlias, String columnAliasPrefix, Table table, List<String> usedTableAliases) throws SQLException, InstantiationException, IllegalAccessException, IllegalArgumentException, SecurityException, InvocationTargetException, NoSuchMethodException {
 		logger.debug("Entry into populateEntity with tableAlias: "+tableAlias+" columnAliasPrefix: "+columnAliasPrefix+" and table: "+table);
+		
+		if(usedTableAliases != null && usedTableAliases.contains(tableAlias)) {
+			return null;
+		} else {
+			if(usedTableAliases == null) {
+				usedTableAliases = new ArrayList<String>();
+			}
+			usedTableAliases.add(tableAlias);
+		}
 		Object entity = null;
 		entity = table.getTableClass().newInstance();
 		
@@ -442,7 +454,7 @@ public class GenericDAOImpl<T, ID extends Serializable> extends BaseDAOImpl impl
 				logger.debug("Populating FK table: "+fk.getReferenceTable().getName()+" reference by "+table.getName()+"."+fk.getKeyColumn().getColumnName());
 				String fkTableAlias = TableRetrievalService.getFkTableAlias(table, fk);
 				String fkColumnAliasPrefix = TableRetrievalService.getFkColumnPrefix(table, fk);
-				Object fkEntity = populateEntity(rs, fkTableAlias, fkColumnAliasPrefix, fk.getReferenceTable());
+				Object fkEntity = populateEntity(rs, fkTableAlias, fkColumnAliasPrefix, fk.getReferenceTable(), usedTableAliases);
 				setFKObjectValue(entity, fkEntity, fk.getKeyColumn());
 			}
 		}
