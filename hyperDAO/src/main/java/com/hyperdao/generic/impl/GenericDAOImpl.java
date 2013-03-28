@@ -43,9 +43,12 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 		registerTable(clazz);
 	}
 	
-	protected void registerTable(Class<T> tableClass) {
-		this.table = TableRetrievalService.registerTable(tableClass);
-	}
+    /**
+     * Determine if the given entity of type {@literal T} is valid to be persisted into the database
+     * @param entity
+     * @return <code>true</code> if the entity is valid and ready to be persisted, <code>false</code> otherwise
+     */
+    public abstract boolean isValid(T entity);
 
 	/* (non-Javadoc)
 	 * @see com.parsons.reciply.dao.base.GenericDAO#create(java.lang.Object)
@@ -397,14 +400,11 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 		}
 		logger.debug("Exit from DeleteAll");
 	}
-	
-    /**
-     * Determine if the given entity of type {@literal T} is valid to be persisted into the database
-     * @param entity
-     * @return TRUE if the entity is valid and ready to be persisted, FALSE otherwise
-     */
-    public abstract boolean isValid(T entity);
 
+	/**
+	 * Return the {@link Table} that was registered with HyperDAO
+	 * @return the registered {@link Table}
+	 */
 	public Table getTable() {
 		return table;
 	}
@@ -465,52 +465,19 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	}
 
 	/**
-	 * @param rs
-	 * @param column
-	 * @param referenceName 
-	 * @return
-	 * @throws SQLException 
+	 * Register the table class with HyperDAO
+	 * @param tableClass - model class to register
 	 */
-	private Object getReturnValue(ResultSet rs, Type columnType, String referenceName) throws SQLException {
-		logger.debug("Entry into getReturnValue with columnType: "+columnType+", referenceName: "+referenceName);
-		
-		Object value = null;
-		
-		if(columnType == String.class) {
-			logger.debug("Object is of type String");
-			value = rs.getString(referenceName);
-		} else if(columnType == Integer.class || columnType == int.class) {
-			logger.debug("Object is of type Integer");
-			value = rs.getInt(referenceName);
-		} else if(columnType == Long.class || columnType == long.class) {
-			logger.debug("Object is of type Long");
-			value = rs.getLong(referenceName);
-		} else if(columnType == Double.class || columnType == double.class) {
-			logger.debug("Object is of type Double");
-			value = rs.getDouble(referenceName);
-		} else if(columnType == Float.class || columnType == float.class) {
-			logger.debug("Object is of type Float");
-			value = rs.getFloat(referenceName);
-		} else if(columnType == BigDecimal.class) {
-			logger.debug("Object is of type BigDecimal");
-			value = rs.getBigDecimal(referenceName);
-		} else if(columnType == Timestamp.class) {
-			logger.debug("Object is of type Timestamp");
-			value = rs.getTimestamp(referenceName);
-		} else if(columnType == java.sql.Date.class) {
-			logger.debug("Object is of type java.sql.Date");
-			value = rs.getDate(referenceName);
-		} else if(columnType == java.util.Date.class) {
-			logger.debug("Object is of type java.util.Date");
-			java.sql.Date sqlDate = rs.getDate(referenceName);
-			value = new java.util.Date(sqlDate.getTime());
-		} else if(columnType == Boolean.class || columnType == boolean.class) {
-			logger.debug("Object is of type Boolean");
-			value = rs.getBoolean(referenceName);
-		}
-		
-		logger.debug("Exit from getReturnValue with value: "+value);
-		return value;
+	protected void registerTable(Class<T> tableClass) {
+		this.table = TableRetrievalService.registerTable(tableClass);
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	protected Connection getConnection() {
+		return connection;
 	}
 
 	/**
@@ -638,6 +605,55 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	}
 
 	/**
+	 * @param rs
+	 * @param column
+	 * @param referenceName 
+	 * @return
+	 * @throws SQLException 
+	 */
+	private Object getReturnValue(ResultSet rs, Type columnType, String referenceName) throws SQLException {
+		logger.debug("Entry into getReturnValue with columnType: "+columnType+", referenceName: "+referenceName);
+		
+		Object value = null;
+		
+		if(columnType == String.class) {
+			logger.debug("Object is of type String");
+			value = rs.getString(referenceName);
+		} else if(columnType == Integer.class || columnType == int.class) {
+			logger.debug("Object is of type Integer");
+			value = rs.getInt(referenceName);
+		} else if(columnType == Long.class || columnType == long.class) {
+			logger.debug("Object is of type Long");
+			value = rs.getLong(referenceName);
+		} else if(columnType == Double.class || columnType == double.class) {
+			logger.debug("Object is of type Double");
+			value = rs.getDouble(referenceName);
+		} else if(columnType == Float.class || columnType == float.class) {
+			logger.debug("Object is of type Float");
+			value = rs.getFloat(referenceName);
+		} else if(columnType == BigDecimal.class) {
+			logger.debug("Object is of type BigDecimal");
+			value = rs.getBigDecimal(referenceName);
+		} else if(columnType == Timestamp.class) {
+			logger.debug("Object is of type Timestamp");
+			value = rs.getTimestamp(referenceName);
+		} else if(columnType == java.sql.Date.class) {
+			logger.debug("Object is of type java.sql.Date");
+			value = rs.getDate(referenceName);
+		} else if(columnType == java.util.Date.class) {
+			logger.debug("Object is of type java.util.Date");
+			java.sql.Date sqlDate = rs.getDate(referenceName);
+			value = new java.util.Date(sqlDate.getTime());
+		} else if(columnType == Boolean.class || columnType == boolean.class) {
+			logger.debug("Object is of type Boolean");
+			value = rs.getBoolean(referenceName);
+		}
+		
+		logger.debug("Exit from getReturnValue with value: "+value);
+		return value;
+	}
+
+	/**
 	 * @param entity
 	 * @param sql
 	 * @return
@@ -749,9 +765,5 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 */
 	private void setFKObjectValue(Object entity, Object fkEntityValue, Column column) throws IllegalArgumentException, SecurityException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		setValue(entity, fkEntityValue, column.getDataSetMethod(), fkEntityValue.getClass());
-	}
-	
-	protected Connection getConnection() {
-		return connection;
 	}
 }
