@@ -27,7 +27,8 @@ public class DBUtil {
 	
 	public static void closeStatement(PreparedStatement ps) {
 		try {
-			if(ps != null && !ps.isClosed()) {
+//			if(ps != null && !ps.isClosed()) {
+		    if(ps != null) {
 				ps.close();
 			}
 		} catch (SQLException e) {

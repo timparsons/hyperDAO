@@ -1,7 +1,6 @@
 package com.hyperdao.generic.model;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 
 /**
  * A representation of a SQL column
@@ -11,17 +10,17 @@ import java.lang.reflect.Type;
  */
 public class Column {
 	
-	private Type columnType;
+	private Class<?> columnType;
 	private String columnName;
 	private boolean isPrimary;
 	private boolean isAutoGen;
 	private Method dataRetrievalMethod;
 	private Method dataSetMethod;
 	
-	public Type getColumnType() {
+	public Class<?> getColumnType() {
 		return columnType;
 	}
-	public void setColumnType(Type columnType) {
+	public void setColumnType(Class<?> columnType) {
 		this.columnType = columnType;
 	}
 	public String getColumnName() {

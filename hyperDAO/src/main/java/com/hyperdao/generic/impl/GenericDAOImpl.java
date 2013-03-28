@@ -24,6 +24,8 @@ import com.hyperdao.generic.model.Column;
 import com.hyperdao.generic.model.ForeignKey;
 import com.hyperdao.generic.model.Table;
 import com.hyperdao.generic.service.TableRetrievalService;
+import com.hyperdao.module.ReadAssistant;
+import com.hyperdao.module.WriteAssistant;
 import com.hyperdao.util.DBUtil;
 import com.hyperdao.util.DateUtil;
 import com.hyperdao.util.constant.SQLConstants;
@@ -37,10 +39,21 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 
 	private Table table;
 	private Connection connection;
+	private ReadAssistant readAssistant;
+	private WriteAssistant writeAssistant;
 	
 	public GenericDAOImpl(Connection connection, Class<T> clazz) {
 		this.connection = connection;
 		registerTable(clazz);
+		this.readAssistant = new ReadAssistant();
+		this.writeAssistant = new WriteAssistant();
+	}
+	
+	public GenericDAOImpl(Connection connection, Class<T> clazz, ReadAssistant readAssistant, WriteAssistant writeAssistant) {
+	    this(connection, clazz);
+	    
+	    this.readAssistant = readAssistant;
+	    this.writeAssistant = writeAssistant;
 	}
 	
     /**
@@ -54,7 +67,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @see com.parsons.reciply.dao.base.GenericDAO#create(java.lang.Object)
 	 */
 	@SuppressWarnings("unchecked")
-	@Override
+//	@Override
 	public <S extends T> S create(T entity) throws HyperDAOException {
 		logger.debug("Entry into create with entity: "+entity);
 		if(!isValid(entity)) {
@@ -88,7 +101,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @see com.parsons.reciply.dao.base.GenericDAO#create(java.lang.Iterable)
 	 */
 	@SuppressWarnings("unchecked")
-	@Override
+//	@Override
 	public Iterable<T> create(Iterable<? extends T> entities) throws HyperDAOException {
 		logger.debug("Entry into update(List) with entities: "+entities);
 		
@@ -129,7 +142,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @see com.parsons.reciply.dao.base.GenericDAO#save(java.lang.Object)
 	 */
 	@SuppressWarnings("unchecked")
-	@Override
+//	@Override
 	public <S extends T> S update(T entity) throws HyperDAOException {
 		logger.debug("Entry into update with entity: "+entity);
 		if(!isValid(entity)) {
@@ -167,7 +180,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @see com.parsons.reciply.dao.base.GenericDAO#save(java.lang.Iterable)
 	 */
 	@SuppressWarnings("unchecked")
-	@Override
+//	@Override
 	public Iterable<T> update(Iterable<? extends T> entities) throws HyperDAOException {
 		logger.debug("Entry into update with entities: "+entities);
 		if(table == null && entities != null) {
@@ -210,7 +223,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @see com.parsons.reciply.dao.base.GenericDAO#read(java.io.Serializable)
 	 */
 	@SuppressWarnings("unchecked")
-	@Override
+//	@Override
 	public T read(ID id) throws HyperDAOException {
 		logger.debug("Entry into read with id: "+id);
 		if(table == null ) {
@@ -229,7 +242,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 		try {
 			logger.debug("SQL to execute: "+sql.toString());
 			ps = getConnection().prepareStatement(sql.toString());
-			setParam(id, ps, 0);
+			setParam(id, ps, 0, id.getClass());
 			ResultSet rs = ps.executeQuery();
 			if(rs.next()) {
 				logger.debug("Populating entity");
@@ -253,7 +266,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @see com.parsons.reciply.dao.base.GenericDAO#read(java.lang.Object)
 	 */
 	@SuppressWarnings("unchecked")
-	@Override
+//	@Override
 	public Iterable<T> read(T model) throws HyperDAOException {
 		logger.debug("Entry into read with model: "+model);
 		if(table == null && model == null) {
@@ -307,7 +320,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	/* (non-Javadoc)
 	 * @see com.parsons.reciply.dao.base.GenericDAO#readAll()
 	 */
-	@Override
+//	@Override
 	public Iterable<T> readAll() throws HyperDAOException {
 		logger.debug("Entry into readAll())");
 		T model = null;
@@ -317,7 +330,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	/* (non-Javadoc)
 	 * @see com.parsons.reciply.dao.base.GenericDAO#delete(java.lang.Object)
 	 */
-	@Override
+//	@Override
 	public void delete(T entity) throws HyperDAOException {
 		logger.debug("Entry into delete with entity: "+entity);
 		StringBuilder sql = new StringBuilder(table.getDeleteSQL());
@@ -346,8 +359,9 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	/* (non-Javadoc)
 	 * @see com.parsons.reciply.dao.base.GenericDAO#delete(java.lang.Iterable)
 	 */
-	@Override
-	public void delete(Iterable<? extends T> entities) throws HyperDAOException {
+//	@Override
+	@SuppressWarnings("unchecked")
+    public void delete(Iterable<? extends T> entities) throws HyperDAOException {
 		logger.debug("Entry into delete with entities: "+entities.toString());
 		StringBuilder sql = new StringBuilder(table.getDeleteSQL());
 		
@@ -361,7 +375,8 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 			ps = getConnection().prepareStatement(sql.toString());
 			for(T entity : entities) {
 				logger.debug("Adding entity: "+entity+" to batch");
-				setParam(entity, ps, 0);
+				ID id = (ID) table.getPrimaryKey().getDataRetrievalMethod().invoke(entity);
+				setParam(id, ps, 0, table.getPrimaryKey().getColumnType());
 				ps.addBatch();
 			}
 			
@@ -382,7 +397,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	/* (non-Javadoc)
 	 * @see com.parsons.reciply.dao.base.GenericDAO#deleteAll()
 	 */
-	@Override
+//	@Override
 	public void deleteAll() throws HyperDAOException {
 		logger.debug("Entry into deleteAll");
 		PreparedStatement ps = null;
@@ -479,6 +494,22 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	protected Connection getConnection() {
 		return connection;
 	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	protected ReadAssistant getReadAssistant() {
+	    return readAssistant;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	protected WriteAssistant getWriteAssistant() {
+	    return writeAssistant;
+	}
 
 	/**
 	 * @param entity
@@ -503,14 +534,14 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 				Object o = column.getDataRetrievalMethod().invoke(entity);
 				String objectVal = o == null ? "" : o.toString();
 				logger.debug("Setting value of: "+column.getColumnName()+" to: "+objectVal+" for count: "+count);
-				count = setParam(o, ps, count);
+				count = setParam(o, ps, count, column.getColumnType());
 			}
 		}
 
 		if(primaryKeyCol != null && !primaryKeyCol.isAutoGen()) {
 			Object o = primaryKeyCol.getDataRetrievalMethod().invoke(entity);
 			logger.debug("Setting primary key value in search criteria to: "+o.toString());
-			count = setParam(o, ps, count);
+			count = setParam(o, ps, count, primaryKeyCol.getColumnType());
 		}
 		
 		logger.debug("Exit from populateCreate with count: "+count);
@@ -540,8 +571,9 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 				continue;
 			} else /*if(!idOnly)*/ {
 				Object o = column.getDataRetrievalMethod().invoke(entity);
-				logger.debug("Setting value of: "+column.getColumnName()+" to: "+o.toString()+" for count: "+count);
-				count = setParam(o, ps, count);
+                String objectVal = o == null ? "" : o.toString();
+				logger.debug("Setting value of: "+column.getColumnName()+" to: "+objectVal+" for count: "+count);
+				count = setParam(o, ps, count, column.getColumnType());
 			}
 		}
 
@@ -551,7 +583,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 		} else {
 			Object o = primaryKeyCol.getDataRetrievalMethod().invoke(entity);
 			logger.debug("Setting primary key value in search criteria to: "+o.toString());
-			count = setParam(o, ps, count);
+			count = setParam(o, ps, count, primaryKeyCol.getColumnType());
 		}
 		
 		logger.debug("Exit from populateSave with count: "+count);
@@ -563,90 +595,126 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @param ps
 	 * @throws SQLException 
 	 */
-	protected int setParam(Object o, PreparedStatement ps, int count) throws SQLException {
+	protected int setParam(Object o, PreparedStatement ps, int count, Type columnType) throws SQLException {
 		logger.debug("Entry into setParam with count: "+count);
 		if(o == null) {
 			logger.debug("Object is null");
-			ps.setNull(++count, Types.OTHER);
-		} else if(o instanceof String) {
-			logger.debug("Object is of type String");
-			ps.setString(++count, (String)o);
-		} else if(o instanceof Integer) {
-			logger.debug("Object is of type Integer");
-			ps.setInt(++count, (Integer)o);
-		} else if(o instanceof Long) {
-			logger.debug("Object is of type Long");
-			ps.setLong(++count,  (Long)o);
-		} else if(o instanceof Double) {
-			logger.debug("Object is of type Double");
-			ps.setDouble(++count,  (Double)o);
-		} else if(o instanceof Float) {
-			logger.debug("Object is of type Float");
-			ps.setFloat(++count,  (Float)o);
-		} else if(o instanceof BigDecimal) {
-			logger.debug("Object is of type BigDecimal");
-			ps.setBigDecimal(++count,  (BigDecimal)o);
-		} else if(o instanceof Timestamp) {
-			logger.debug("Object is of type Timestamp");
-			ps.setTimestamp(++count,  (Timestamp)o);
-		} else if(o instanceof java.sql.Date) {
-			logger.debug("Object is of type java.sql.Date");
-			ps.setDate(++count,  (java.sql.Date)o);
-		} else if(o instanceof java.util.Date) {
-			logger.debug("Object is of type java.util.Date");
-			ps.setDate(++count,  DateUtil.convertToSQLDate((java.util.Date)o));
-		} else if(o instanceof Boolean) {
-			logger.debug("Object is of type Boolean");
-			ps.setBoolean(++count, (Boolean)o);
-		}
+			count = setNull(ps, count, columnType);
+		} else if(getWriteAssistant().getAssistMethods().containsKey(o.getClass())) {
+           logger.debug("Object is specified in the WriteAssistant, invoking the assistant to get the value");
+           Object assistedVal = getWriteAssistant().getValue(o);
+           count = setPrimitiveParam(assistedVal, ps, count);
+        } else {
+            count = setPrimitiveParam(o, ps, count);
+        }
 		
 		logger.debug("Exit from setParam with count: "+count);
 		return count;
 	}
 
 	/**
+     * @param count
+     * @param columnType
+     * @return
+	 * @throws SQLException 
+     */
+    private int setNull(PreparedStatement ps, int count, Type columnType) throws SQLException {
+        if(columnType == String.class) {
+            logger.debug("Column is of type String");
+            ps.setNull(++count, Types.VARCHAR);
+        } else if(columnType == Integer.class || columnType == int.class) {
+            logger.debug("Column is of type Integer");
+            ps.setNull(++count, Types.INTEGER);
+        } else if(columnType == Long.class || columnType == long.class) {
+            logger.debug("Column is of type Long");
+            ps.setNull(++count, Types.BIGINT);
+        } else if(columnType == Double.class || columnType == double.class) {
+            logger.debug("Column is of type Double");
+            ps.setNull(++count, Types.DOUBLE);
+        } else if(columnType == Float.class || columnType == float.class) {
+            logger.debug("Column is of type Float");
+            ps.setNull(++count, Types.FLOAT);
+        } else if(columnType == BigDecimal.class) {
+            logger.debug("Column is of type BigDecimal");
+            ps.setNull(++count, Types.DECIMAL);
+        } else if(columnType == Timestamp.class) {
+            logger.debug("Column is of type Timestamp");
+            ps.setNull(++count, Types.TIMESTAMP);
+        } else if(columnType == java.sql.Date.class || columnType == java.util.Date.class) {
+            logger.debug("Column is of type java.util.Date or java.sql.Date");
+            ps.setNull(++count, Types.DATE);
+        } else if(columnType == Boolean.class || columnType == boolean.class) {
+            logger.debug("Column is of type Boolean");
+            ps.setNull(++count, Types.BOOLEAN);
+        } else {
+            logger.debug("Column is of type OTHER");
+            ps.setNull(++count, Types.OTHER);
+        }
+        
+        return count;
+    }
+
+    /**
+     * @param o
+     * @param ps
+     * @param count
+	 * @throws SQLException 
+     */
+    private int setPrimitiveParam(Object o, PreparedStatement ps, int count) throws SQLException {
+        if(o instanceof String) {
+            logger.debug("Object is of type String");
+            ps.setString(++count, (String)o);
+        } else if(o instanceof Integer) {
+            logger.debug("Object is of type Integer");
+            ps.setInt(++count, (Integer)o);
+        } else if(o instanceof Long) {
+            logger.debug("Object is of type Long");
+            ps.setLong(++count,  (Long)o);
+        } else if(o instanceof Double) {
+            logger.debug("Object is of type Double");
+            ps.setDouble(++count,  (Double)o);
+        } else if(o instanceof Float) {
+            logger.debug("Object is of type Float");
+            ps.setFloat(++count,  (Float)o);
+        } else if(o instanceof BigDecimal) {
+            logger.debug("Object is of type BigDecimal");
+            ps.setBigDecimal(++count,  (BigDecimal)o);
+        } else if(o instanceof Timestamp) {
+            logger.debug("Object is of type Timestamp");
+            ps.setTimestamp(++count,  (Timestamp)o);
+        } else if(o instanceof java.sql.Date) {
+            logger.debug("Object is of type java.sql.Date");
+            ps.setDate(++count,  (java.sql.Date)o);
+        } else if(o instanceof java.util.Date) {
+            logger.debug("Object is of type java.util.Date");
+            ps.setDate(++count,  DateUtil.convertToSQLDate((java.util.Date)o));
+        } else if(o instanceof Boolean) {
+            logger.debug("Object is of type Boolean");
+            ps.setBoolean(++count, (Boolean)o);
+        }
+        
+        return count;
+    }
+
+    /**
 	 * @param rs
 	 * @param column
 	 * @param referenceName 
 	 * @return
 	 * @throws SQLException 
 	 */
-	private Object getReturnValue(ResultSet rs, Type columnType, String referenceName) throws SQLException {
+	private Object getReturnValue(ResultSet rs, Class<?> columnType, String referenceName) throws SQLException {
 		logger.debug("Entry into getReturnValue with columnType: "+columnType+", referenceName: "+referenceName);
 		
 		Object value = null;
 		
-		if(columnType == String.class) {
-			logger.debug("Object is of type String");
-			value = rs.getString(referenceName);
-		} else if(columnType == Integer.class || columnType == int.class) {
-			logger.debug("Object is of type Integer");
-			value = rs.getInt(referenceName);
-		} else if(columnType == Long.class || columnType == long.class) {
-			logger.debug("Object is of type Long");
-			value = rs.getLong(referenceName);
-		} else if(columnType == Double.class || columnType == double.class) {
-			logger.debug("Object is of type Double");
-			value = rs.getDouble(referenceName);
-		} else if(columnType == Float.class || columnType == float.class) {
-			logger.debug("Object is of type Float");
-			value = rs.getFloat(referenceName);
-		} else if(columnType == BigDecimal.class) {
-			logger.debug("Object is of type BigDecimal");
-			value = rs.getBigDecimal(referenceName);
-		} else if(columnType == Timestamp.class) {
-			logger.debug("Object is of type Timestamp");
-			value = rs.getTimestamp(referenceName);
-		} else if(columnType == java.sql.Date.class) {
-			logger.debug("Object is of type java.sql.Date");
-			value = rs.getDate(referenceName);
-		} else if(columnType == java.util.Date.class) {
-			logger.debug("Object is of type java.util.Date");
-			java.sql.Date sqlDate = rs.getDate(referenceName);
-			value = new java.util.Date(sqlDate.getTime());
-		} else if(columnType == Boolean.class || columnType == boolean.class) {
-			logger.debug("Object is of type Boolean");
-			value = rs.getBoolean(referenceName);
+		if(getReadAssistant().getAssistMethods().containsKey(columnType)) {
+	        logger.debug("Object is specified in the ReadAssistant, invoking the assistant to get the value");
+	        Class<?> primitiveType = getReadAssistant().getComplexToPrimitive().get(columnType);
+	        Object primitiveValue = getPrimitiveReturnValue(rs, primitiveType, referenceName);
+	        value = getReadAssistant().getValue(primitiveValue, columnType);
+		} else {
+		    value = getPrimitiveReturnValue(rs, columnType, referenceName);
 		}
 		
 		logger.debug("Exit from getReturnValue with value: "+value);
@@ -654,6 +722,56 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	}
 
 	/**
+     * @param rs
+     * @param columnType
+     * @param referenceName
+	 * @throws SQLException 
+     */
+    private Object getPrimitiveReturnValue(ResultSet rs, Type columnType, String referenceName) throws SQLException {
+        logger.debug("Entry into getPrimitiveReturnValue with columnType: "+columnType+", referenceName: "+referenceName);
+        
+        Object value = null;
+        
+        if(columnType == String.class) {
+            logger.debug("Object is of type String");
+            value = rs.getString(referenceName);
+        } else if(columnType == Integer.class || columnType == int.class) {
+            logger.debug("Object is of type Integer");
+            value = rs.getInt(referenceName);
+        } else if(columnType == Long.class || columnType == long.class) {
+            logger.debug("Object is of type Long");
+            value = rs.getLong(referenceName);
+        } else if(columnType == Double.class || columnType == double.class) {
+            logger.debug("Object is of type Double");
+            value = rs.getDouble(referenceName);
+        } else if(columnType == Float.class || columnType == float.class) {
+            logger.debug("Object is of type Float");
+            value = rs.getFloat(referenceName);
+        } else if(columnType == BigDecimal.class) {
+            logger.debug("Object is of type BigDecimal");
+            value = rs.getBigDecimal(referenceName);
+        } else if(columnType == Timestamp.class) {
+            logger.debug("Object is of type Timestamp");
+            value = rs.getTimestamp(referenceName);
+        } else if(columnType == java.sql.Date.class) {
+            logger.debug("Object is of type java.sql.Date");
+            value = rs.getDate(referenceName);
+        } else if(columnType == java.util.Date.class) {
+            logger.debug("Object is of type java.util.Date");
+            java.sql.Date sqlDate = rs.getDate(referenceName);
+            if(sqlDate != null) {
+                value = new java.util.Date(sqlDate.getTime());
+            }
+        } else if(columnType == Boolean.class || columnType == boolean.class) {
+            logger.debug("Object is of type Boolean");
+            value = rs.getBoolean(referenceName);
+        }
+        
+        logger.debug("Exit from getPrimitiveReturnValue with value: "+value);
+        return value;
+    }
+
+    /**
 	 * @param entity
 	 * @param sql
 	 * @return
@@ -710,7 +828,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 				//TODO handle checking foreign keys that are int
 
 				logger.debug("Populating search param count: "+count+" with value: "+column.getColumnName());
-				count = setParam(o, ps, count);
+				count = setParam(o, ps, count, column.getColumnType());
 			}
 		}
 		

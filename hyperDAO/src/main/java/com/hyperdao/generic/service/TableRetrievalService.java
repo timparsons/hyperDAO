@@ -2,7 +2,6 @@ package com.hyperdao.generic.service;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -96,7 +95,7 @@ public class TableRetrievalService {
 	 */
 	public static Collection<Method> getEntitySortedMethods(Class<?> tableClass) {
 		Collection<Method> methods = new TreeSet<Method>(new Comparator<Method>() {
-			@Override
+//			@Override
 			public int compare(Method m1, Method m2) {
 				return m1.getName().compareTo(m2.getName());
 			}
@@ -179,7 +178,7 @@ public class TableRetrievalService {
 		if(columnAnnotation != null) {
 			try {
 				String columnName = (String) columnAnnotation.annotationType().getMethod("name").invoke(columnAnnotation);
-				Type methodType = method.getReturnType();
+				Class<?> methodType = method.getReturnType();
 				
 				column = populateColumn(method, columnName, methodType, getSetMethod(tableClass, method));
 			} catch (Exception e) {
@@ -250,7 +249,7 @@ public class TableRetrievalService {
 	 * @param setMethod 
 	 * @return a new {@link Column} based off of the incoming column information
 	 */
-	private static Column populateColumn(Method method, String columnName, Type methodType, Method setMethod) {
+	private static Column populateColumn(Method method, String columnName, Class<?> methodType, Method setMethod) {
 		Column column = new Column();
 		if(columnName != null && methodType != null) {
 			column = new Column();
