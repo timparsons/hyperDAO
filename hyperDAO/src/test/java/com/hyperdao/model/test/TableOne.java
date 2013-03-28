@@ -6,7 +6,7 @@
 //
 
 
-package com.parsons.dao.model.test;
+package com.hyperdao.model.test;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;

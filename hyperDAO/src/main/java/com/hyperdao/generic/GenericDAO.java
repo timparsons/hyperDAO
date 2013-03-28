@@ -1,8 +1,8 @@
-package com.parsons.dao.generic;
+package com.hyperdao.generic;
 
 import java.io.Serializable;
 
-import com.parsons.dao.exception.HyperDAOException;
+import com.hyperdao.exception.HyperDAOException;
 
 
 /**
@@ -92,11 +92,4 @@ public interface GenericDAO <T, ID extends Serializable> {
      * @throws HyperDAOException
      */
     void deleteAll() throws HyperDAOException;
-    
-    /**
-     * Determine if the given entity of type {@literal T} is valid to be persisted into the database
-     * @param entity
-     * @return TRUE if the entity is valid and ready to be persisted, FALSE otherwise
-     */
-    boolean isValid(T entity);
 }

@@ -1,4 +1,4 @@
-package com.parsons.dao.exception;
+package com.hyperdao.exception;
 
 /**
  * @author Tim

@@ -1,4 +1,4 @@
-package com.parsons.dao.generic.impl;
+package com.hyperdao.generic.impl;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -18,21 +18,21 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.parsons.dao.generic.GenericDAO;
-import com.parsons.dao.generic.model.Column;
-import com.parsons.dao.generic.model.ForeignKey;
-import com.parsons.dao.generic.model.Table;
-import com.parsons.dao.generic.service.TableRetrievalService;
-import com.parsons.dao.exception.HyperDAOException;
-import com.parsons.dao.util.DBUtil;
-import com.parsons.dao.util.DateUtil;
-import com.parsons.dao.util.constant.SQLConstants;
+import com.hyperdao.exception.HyperDAOException;
+import com.hyperdao.generic.GenericDAO;
+import com.hyperdao.generic.model.Column;
+import com.hyperdao.generic.model.ForeignKey;
+import com.hyperdao.generic.model.Table;
+import com.hyperdao.generic.service.TableRetrievalService;
+import com.hyperdao.util.DBUtil;
+import com.hyperdao.util.DateUtil;
+import com.hyperdao.util.constant.SQLConstants;
 
 /**
  * @author Tim
  *
  */
-public class GenericDAOImpl<T, ID extends Serializable> implements GenericDAO<T, ID> {
+public abstract class GenericDAOImpl<T, ID extends Serializable> implements GenericDAO<T, ID> {
 	private static final Logger logger = LoggerFactory.getLogger(GenericDAOImpl.class);
 
 	private Table table;
@@ -397,14 +397,13 @@ public class GenericDAOImpl<T, ID extends Serializable> implements GenericDAO<T,
 		}
 		logger.debug("Exit from DeleteAll");
 	}
-
-	/* (non-Javadoc)
-	 * @see com.parsons.reciply.dao.base.GenericDAO#isValid(java.lang.Object)
-	 */
-	@Override
-	public boolean isValid(T entity) {
-		return false;
-	}
+	
+    /**
+     * Determine if the given entity of type {@literal T} is valid to be persisted into the database
+     * @param entity
+     * @return TRUE if the entity is valid and ready to be persisted, FALSE otherwise
+     */
+    public abstract boolean isValid(T entity);
 
 	public Table getTable() {
 		return table;

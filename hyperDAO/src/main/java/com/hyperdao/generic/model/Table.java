@@ -1,4 +1,4 @@
-package com.parsons.dao.generic.model;
+package com.hyperdao.generic.model;
 
 import java.util.List;
 

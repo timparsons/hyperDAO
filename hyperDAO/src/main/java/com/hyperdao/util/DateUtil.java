@@ -1,4 +1,4 @@
-package com.parsons.dao.util;
+package com.hyperdao.util;
 
 import java.sql.Timestamp;
 import java.util.Calendar;

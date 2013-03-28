@@ -1,4 +1,4 @@
-package com.parsons.dao.generic.model;
+package com.hyperdao.generic.model;
 
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;

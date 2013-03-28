@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.parsons.dao.util;
+package com.hyperdao.util;
 
 import java.util.UUID;
 

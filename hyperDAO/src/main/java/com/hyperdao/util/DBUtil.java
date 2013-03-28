@@ -2,7 +2,7 @@
  * Tim Parsons
  * Copyright 2013
  */
-package com.parsons.dao.util;
+package com.hyperdao.util;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -11,7 +11,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.parsons.dao.util.constant.SQLConstants;
+import com.hyperdao.util.constant.SQLConstants;
 
 /**
  * @author Tim

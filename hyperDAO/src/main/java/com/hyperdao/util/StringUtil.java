@@ -2,7 +2,7 @@
  * Tim Parsons
  * Copyright 2013
  */
-package com.parsons.dao.util;
+package com.hyperdao.util;
 
 /**
  * @author Tim

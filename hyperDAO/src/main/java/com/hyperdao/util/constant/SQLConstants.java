@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.parsons.dao.util.constant;
+package com.hyperdao.util.constant;
 
 /**
  * Collection of constants used when doing anything with SQL

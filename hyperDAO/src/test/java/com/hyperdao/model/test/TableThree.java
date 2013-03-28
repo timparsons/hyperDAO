@@ -6,7 +6,7 @@
 //
 
 
-package com.parsons.dao.model.test;
+package com.hyperdao.model.test;
 
 import java.sql.Timestamp;
 import javax.persistence.Basic;
@@ -23,29 +23,31 @@ import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
-@Entity(name = "TableTwo")
-@Table(name = "Table_Two")
+@Entity(name = "TableThree")
+@Table(name = "Table_Three")
 @Inheritance(strategy = InheritanceType.JOINED)
-public class TableTwo
+public class TableThree
 {
 
-    protected Integer tableTwoId;
+    protected Integer tableThreeId;
     protected String name;
-    protected Integer tableOneId;
+    protected String tableOneId;
+    protected String tableOneIdAlternate;
     protected TableOne tableOne;
+    protected TableOne tableOneAlternate;
     protected String abbreviation;
     protected Timestamp createDate;
 
     @Id
-    @Column(name = "table_two_id", scale = 0)
-    @GeneratedValue(generator = "table_two_sequence", strategy = GenerationType.SEQUENCE)
-    @SequenceGenerator(name = "table_two_sequence", sequenceName = "TABLE_TWO_SEQ")
-    public Integer getTableTwoId() {
-        return tableTwoId;
+    @Column(name = "table_three_id", scale = 0)
+    @GeneratedValue(generator = "table_Three_sequence", strategy = GenerationType.SEQUENCE)
+    @SequenceGenerator(name = "table_Three_sequence", sequenceName = "TABLE_Three_SEQ")
+    public Integer getTableThreeId() {
+        return tableThreeId;
     }
 
-    public void setTableTwoId(Integer value) {
-        this.tableTwoId = value;
+    public void setTableThreeId(Integer value) {
+        this.tableThreeId = value;
     }
 
     @Basic
@@ -60,11 +62,11 @@ public class TableTwo
 
     @Basic
     @Column(name = "table_one_id", length = 36)
-    public Integer getTableOneId () {
+    public String getTableOneId () {
         return tableOneId;
     }
 
-    public void setTableOneId(Integer value) {
+    public void setTableOneId(String value) {
         this.tableOneId = value;
     }
 
@@ -79,8 +81,30 @@ public class TableTwo
     public void setTableOne(TableOne value) {
         this.tableOne = value;
     }
-
+    
     @Basic
+    @Column(name = "table_one_id_alternate", length = 36)
+    public String getTableOneIdAlternate() {
+		return tableOneIdAlternate;
+	}
+
+	public void setTableOneIdAlternate(String tableOneIdAlternate) {
+		this.tableOneIdAlternate = tableOneIdAlternate;
+	}
+
+    @ManyToOne(targetEntity = TableOne.class, cascade = {
+        CascadeType.ALL
+    })
+    @JoinColumn(name = "table_one_id_alternate", referencedColumnName = "table_one_id")
+	public TableOne getTableOneAlternate() {
+		return tableOneAlternate;
+	}
+
+	public void setTableOneAlternate(TableOne tableOneAlternate) {
+		this.tableOneAlternate = tableOneAlternate;
+	}
+
+	@Basic
     @Column(name = "ABBREVIATION", length = 255)
     public String getAbbreviation() {
         return abbreviation;

@@ -1,4 +1,4 @@
-package com.parsons.dao.generic.service;
+package com.hyperdao.generic.service;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -16,11 +16,11 @@ import javax.persistence.Id;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.parsons.dao.generic.model.Column;
-import com.parsons.dao.generic.model.ForeignKey;
-import com.parsons.dao.generic.model.Table;
-import com.parsons.dao.generic.model.ForeignKey.ReferenceType;
-import com.parsons.dao.util.constant.SQLConstants;
+import com.hyperdao.generic.model.Column;
+import com.hyperdao.generic.model.ForeignKey;
+import com.hyperdao.generic.model.Table;
+import com.hyperdao.generic.model.ForeignKey.ReferenceType;
+import com.hyperdao.util.constant.SQLConstants;
 
 /**
  * Given a model class that contains JPA annotations, create a database mapping.

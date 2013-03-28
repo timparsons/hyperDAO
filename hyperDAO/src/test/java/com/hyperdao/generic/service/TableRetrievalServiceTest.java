@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.parsons.dao.generic.service;
+package com.hyperdao.generic.service;
 
 import java.util.Arrays;
 import java.util.List;
@@ -10,11 +10,11 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
-import com.parsons.dao.generic.model.Column;
-import com.parsons.dao.generic.model.ForeignKey;
-import com.parsons.dao.generic.model.Table;
-import com.parsons.dao.generic.service.TableRetrievalService;
-import com.parsons.dao.model.test.TableOne;
+import com.hyperdao.generic.model.Column;
+import com.hyperdao.generic.model.ForeignKey;
+import com.hyperdao.generic.model.Table;
+import com.hyperdao.generic.service.TableRetrievalService;
+import com.hyperdao.model.test.TableOne;
 
 /**
  * @author Tim
