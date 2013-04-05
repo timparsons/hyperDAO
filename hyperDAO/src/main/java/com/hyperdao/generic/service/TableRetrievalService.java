@@ -608,5 +608,19 @@ public class TableRetrievalService {
 	public static String getFkColumnPrefix(Table table, ForeignKey fk) {
 		return getFkTableAlias(table, fk)+"_";
 	}
+	
+	/**
+	 * @param table
+	 * @param class1
+	 * @return
+	 */
+	public static ForeignKey getForeignKey(Table table, Class<?> fkTable) {
+		for(ForeignKey fk : table.getForeignKeys()) {
+			if(fk.getReferenceTable().getTableClass() == fkTable) {
+				return fk;
+			}
+		}
+		return null;
+	}
 
 }

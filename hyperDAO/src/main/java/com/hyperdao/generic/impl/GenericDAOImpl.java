@@ -781,7 +781,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @throws NoSuchMethodException 
 	 * @throws SecurityException 
 	 */
-	private StringBuilder appendSearchCriteria(T entity, StringBuilder sql) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException {
+	protected StringBuilder appendSearchCriteria(T entity, StringBuilder sql) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SecurityException, NoSuchMethodException {
 		logger.debug("Entry into appendSearchCriteria with entity: "+entity.toString());
 		if(sql == null) {
 			throw new IllegalArgumentException("StringBuilder 'sql' cannot be null");
@@ -816,7 +816,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @throws IllegalArgumentException 
 	 * @throws SQLException 
 	 */
-	private int populateSearchCriteria(T entity, PreparedStatement ps, int count) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SQLException {
+	protected int populateSearchCriteria(T entity, PreparedStatement ps, int count) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SQLException {
 		logger.debug("Entry into populateSearchCriteria for table: "+entity.toString()+" with count: "+count);
 		for(Column column : table.getColumns()) {
 			logger.debug("Checking if column: "+column.getColumnName()+" needs to be populated");
