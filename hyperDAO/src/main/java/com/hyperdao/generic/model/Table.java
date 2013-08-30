@@ -15,7 +15,7 @@ public class Table {
 	private List<Column> columns;
 	private List<ForeignKey> foreignKeys;
 	private String createSQL;
-	private String eagerReadSQL;
+//	private String eagerReadSQL;
 	private String lazyReadSQL;
 	private String updateSQL;
 	private String deleteSQL;
@@ -58,17 +58,17 @@ public class Table {
 	 * 
 	 * @return a {@link String} SQL statement to retrieve all information related to the {@link Table}
 	 */
-	public String getEagerReadSQL() {
-		return eagerReadSQL;
-	}
+//	public String getEagerReadSQL() {
+//		return eagerReadSQL;
+//	}
 	
 	/**
 	 * Set the SQL statement that will eagerly retrieve data from the {@link Table}
 	 * @param eagerReadSQL - eager SQL to set
 	 */
-	public void setEagerReadSQL(String eagerReadSQL) {
-		this.eagerReadSQL = eagerReadSQL;
-	}
+//	public void setEagerReadSQL(String eagerReadSQL) {
+//		this.eagerReadSQL = eagerReadSQL;
+//	}
 	
 	/**
 	 * Returns a SQL statement that will fetch only the {@link Table} 
@@ -109,8 +109,8 @@ public class Table {
 	@Override
 	public String toString() {
 		return "Table [name=" + name + ", primaryKey=" + primaryKey
-				+ ", columns=" + columns + ", foreignKeys=" + foreignKeys
-				+ ", createSQL=" + createSQL + ", readSQL=" + eagerReadSQL
+				+ ", columns=" + columns + ", foreignKeys=" /*+ foreignKeys*/
+				+ ", createSQL=" + createSQL + ", readSQL=" + lazyReadSQL
 				+ ", updateSQL=" + updateSQL + ", deleteSQL=" + deleteSQL
 				+ ", tableClass=" + tableClass + "]";
 	}
@@ -128,7 +128,7 @@ public class Table {
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result
 				+ ((primaryKey == null) ? 0 : primaryKey.hashCode());
-		result = prime * result + ((eagerReadSQL == null) ? 0 : eagerReadSQL.hashCode());
+		result = prime * result + ((lazyReadSQL == null) ? 0 : lazyReadSQL.hashCode());
 		result = prime * result
 				+ ((updateSQL == null) ? 0 : updateSQL.hashCode());
 		result = prime * result + ((tableClass == null) ? 0 : tableClass.hashCode());
@@ -173,10 +173,10 @@ public class Table {
 				return false;
 		} else if (!primaryKey.equals(other.primaryKey))
 			return false;
-		if (eagerReadSQL == null) {
-			if (other.eagerReadSQL != null)
+		if (lazyReadSQL == null) {
+			if (other.lazyReadSQL != null)
 				return false;
-		} else if (!eagerReadSQL.equals(other.eagerReadSQL))
+		} else if (!lazyReadSQL.equals(other.lazyReadSQL))
 			return false;
 		if (updateSQL == null) {
 			if (other.updateSQL != null)

@@ -4,6 +4,7 @@
  */
 package com.hyperdao.util;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.UUID;
@@ -33,6 +34,21 @@ public class DBUtil {
 			}
 		} catch (SQLException e) {
 			logger.error("Unable to close preparedStatement", e);
+		}
+	}
+
+	/**
+	 * @param conn
+	 * @throws SQLException 
+	 */
+	public static void closeConnection(Connection conn) {
+		try {
+			if(conn != null) {
+				conn.close();
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	

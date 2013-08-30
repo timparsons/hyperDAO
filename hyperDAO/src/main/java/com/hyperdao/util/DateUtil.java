@@ -30,8 +30,20 @@ public class DateUtil extends DateUtils{
 	public static java.sql.Timestamp parseTimeStamp(String s) {
 		return new Timestamp(DatatypeConverter.parseDate(s).getTime().getTime());
 	}
+	
+	public static String printTimeStamp(Timestamp time) {
+		if(time == null) {
+			return null;
+		}
+		Calendar cal = new GregorianCalendar();
+		cal.setTimeInMillis(time.getTime());
+		return DatatypeConverter.printDateTime(cal);
+	}
 
 	public static String printDate(java.sql.Timestamp dt) {
+		if(dt == null) {
+			return null;
+		}
 		Calendar cal = new GregorianCalendar();
 		cal.setTime(dt);
 		return DatatypeConverter.printDate(cal);

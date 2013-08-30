@@ -61,21 +61,21 @@ public class TableRetrievalServiceTest {
 		System.out.println(table.getCreateSQL());
 		System.out.println(table.getUpdateSQL());
 		System.out.println(table.getDeleteSQL());
-		System.out.println(table.getEagerReadSQL());
+		System.out.println(table.getLazyReadSQL());
 		System.out.println("========================");
 		Table fk1 = table.getForeignKeys().get(0).getReferenceTable();
 		System.out.println(fk1.getName()+" sql: ");
 		System.out.println(fk1.getCreateSQL());
 		System.out.println(fk1.getUpdateSQL());
 		System.out.println(fk1.getDeleteSQL());
-		System.out.println(fk1.getEagerReadSQL());
+		System.out.println(fk1.getLazyReadSQL());
 		System.out.println("========================");
 		Table fk2 = table.getForeignKeys().get(1).getReferenceTable();
 		System.out.println(fk2.getName()+" sql: ");
 		System.out.println(fk2.getCreateSQL());
 		System.out.println(fk2.getUpdateSQL());
 		System.out.println(fk2.getDeleteSQL());
-		System.out.println(fk2.getEagerReadSQL());
+		System.out.println(fk2.getLazyReadSQL());
 		System.out.println("========================");
 	}
 

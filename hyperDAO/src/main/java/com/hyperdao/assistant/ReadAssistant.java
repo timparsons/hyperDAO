@@ -2,7 +2,7 @@
  * Tim Parsons
  * Copyright 2013
  */
-package com.hyperdao.module;
+package com.hyperdao.assistant;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

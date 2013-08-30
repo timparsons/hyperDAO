@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import javax.persistence.Id;
+import javax.persistence.criteria.JoinType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -310,6 +311,7 @@ public class TableRetrievalService {
 				}
 				
 				String keyColumnName = (String) joinColumnAnnotation.annotationType().getMethod("name").invoke(joinColumnAnnotation);
+				boolean joinNullable = (Boolean) joinColumnAnnotation.annotationType().getMethod("nullable").invoke(joinColumnAnnotation);
 				
 				String referenceColumnName = (String) joinColumnAnnotation.annotationType().getMethod("referencedColumnName").invoke(joinColumnAnnotation);
 				if(referenceColumnName == null || referenceColumnName.trim().length() == 0) {
@@ -331,6 +333,12 @@ public class TableRetrievalService {
 					key.setReferenceColumn(referenceColumn);
 					key.setReferenceTable(referenceTable);
 					key.setReferenceType(type);
+					
+					if(joinNullable) {
+						key.setJoinType(JoinType.LEFT);
+					} else {
+						key.setJoinType(JoinType.INNER);
+					}
 				}
 			} catch (Exception e) {
 				logger.error("Unable to retrieve foreign key information", e);
@@ -376,7 +384,7 @@ public class TableRetrievalService {
 	private static void deriveSQL() {
 		for(Table table : tables.values()) {
 			if(table.getCreateSQL() == null || table.getUpdateSQL() == null 
-					|| table.getEagerReadSQL() == null || table.getDeleteSQL() == null) {
+					|| /*table.getEagerReadSQL() == null*/ table.getLazyReadSQL() == null || table.getDeleteSQL() == null) {
 				deriveCreateUpdateSQL(table);
 				deriveReadSQL(table);
 				deriveDeleteSQL(table);
@@ -454,7 +462,7 @@ public class TableRetrievalService {
 	 */
 	private static void deriveReadSQL(Table table) {
 		deriveLazyReadSQL(table);
-		deriveEagerReadSQL(table);
+//		deriveEagerReadSQL(table);
 	}
 
 	/**
@@ -483,9 +491,9 @@ public class TableRetrievalService {
 		readSQL.append(SQLConstants.SQL_FROM);
 		readSQL.append(table.getName());
 		
-		addInnerJoins(table, table.getForeignKeys(), table.getName(), readSQL);
+		addJoins(table, table.getForeignKeys(), table.getName(), readSQL);
 		
-		table.setEagerReadSQL(readSQL.toString());
+//		table.setEagerReadSQL(readSQL.toString());
 	}
 
 	/**
@@ -546,20 +554,32 @@ public class TableRetrievalService {
 	 * @param name
 	 * @param readSQL
 	 */
-	private static void addInnerJoins(Table table, List<ForeignKey> foreignKeys, String tableAlias, StringBuilder readSQL) {
+	private static void addJoins(Table table, List<ForeignKey> foreignKeys, String tableAlias, StringBuilder readSQL) {
 		if(foreignKeys != null && foreignKeys.size() > 0) {
 			for(ForeignKey fk : foreignKeys) {
 				String fkTableAlias = getFkTableAlias(table, fk);
-				readSQL.append(SQLConstants.SQL_INNER_JOIN);
+				readSQL.append(getJoinType(fk));
 				readSQL.append(fk.getReferenceTable().getName()).append(" ").append(fkTableAlias);
 				readSQL.append(" on ");
 				readSQL.append(fkTableAlias).append(".").append(fk.getReferenceColumn().getColumnName());
 				readSQL.append(" = ");
 				readSQL.append(tableAlias).append(".").append(fk.getKeyColumn().getColumnName());
 				
-				addInnerJoins(fk.getReferenceTable(), determineKeysToInclude(fk, table), fkTableAlias, readSQL);
+				addJoins(fk.getReferenceTable(), determineKeysToInclude(fk, table), fkTableAlias, readSQL);
 				
 			}
+		}
+	}
+
+	/**
+	 * @param fk
+	 * @return
+	 */
+	private static Object getJoinType(ForeignKey fk) {
+		if(fk.getJoinType() == JoinType.LEFT) {
+			return SQLConstants.SQL_LEFT_OUTER_JOIN;
+		} else {
+			return SQLConstants.SQL_INNER_JOIN;
 		}
 	}
 

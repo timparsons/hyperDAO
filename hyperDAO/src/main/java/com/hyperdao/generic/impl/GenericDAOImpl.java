@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
+//import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -15,17 +15,21 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hyperdao.assistant.ReadAssistant;
+import com.hyperdao.assistant.WriteAssistant;
 import com.hyperdao.exception.HyperDAOException;
+import com.hyperdao.executor.PreparedStatement;
+import com.hyperdao.executor.PreparedStatementExecutor;
 import com.hyperdao.generic.GenericDAO;
 import com.hyperdao.generic.model.Column;
 import com.hyperdao.generic.model.ForeignKey;
 import com.hyperdao.generic.model.Table;
 import com.hyperdao.generic.service.TableRetrievalService;
-import com.hyperdao.module.ReadAssistant;
-import com.hyperdao.module.WriteAssistant;
 import com.hyperdao.util.DBUtil;
 import com.hyperdao.util.DateUtil;
 import com.hyperdao.util.constant.SQLConstants;
@@ -38,19 +42,19 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	private static final Logger logger = LoggerFactory.getLogger(GenericDAOImpl.class);
 
 	private Table table;
-	private Connection connection;
+	private DataSource dataSource;
 	private ReadAssistant readAssistant;
 	private WriteAssistant writeAssistant;
 	
-	public GenericDAOImpl(Connection connection, Class<T> clazz) {
-		this.connection = connection;
+	public GenericDAOImpl(DataSource dataSource, Class<T> clazz) {
+		this.dataSource = dataSource;
 		registerTable(clazz);
 		this.readAssistant = new ReadAssistant();
 		this.writeAssistant = new WriteAssistant();
 	}
 	
-	public GenericDAOImpl(Connection connection, Class<T> clazz, ReadAssistant readAssistant, WriteAssistant writeAssistant) {
-	    this(connection, clazz);
+	public GenericDAOImpl(DataSource dataSource, Class<T> clazz, ReadAssistant readAssistant, WriteAssistant writeAssistant) {
+	    this(dataSource, clazz);
 	    
 	    this.readAssistant = readAssistant;
 	    this.writeAssistant = writeAssistant;
@@ -78,21 +82,21 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 			registerTable((Class<T>) entity.getClass());
 		}
 		
-		PreparedStatement ps = null;
-		try {
-			logger.debug("SQL to execute:"+table.getCreateSQL());
-			ps = getConnection().prepareStatement(table.getCreateSQL());
-			populateCreate(entity, ps);
-			ps.executeUpdate();
-		} catch (SQLException e) {
-			logger.error("Unable to save entity: " + entity, e);
-			throw new HyperDAOException("Unable to save entity: " + entity, e);
-		} catch (Exception e) {
-			logger.error("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
-			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
-		} finally {
-			DBUtil.closeStatement(ps);
-		}
+		PreparedStatement<T, ID> ps = new PreparedStatement<T, ID>(dataSource);
+		entity = ps.handlePreparedStatement(table.getCreateSQL(), entity, new PreparedStatementExecutor<T, ID>() {
+
+			@Override
+			public T executeStatement(java.sql.PreparedStatement ps, T entity) throws HyperDAOException {
+				try {
+					populateCreate(entity, ps);
+					ps.executeUpdate();
+				} catch (Exception e) {
+					logger.debug("Unable to insert entity: "+entity, e);
+					throw new HyperDAOException("Unable to insert entity: "+entity, e);
+				}
+				return entity;
+			}
+		});
 		
 		logger.debug("Exit from create(entity) with entity: "+entity);
 		return (S) entity;
@@ -113,28 +117,29 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 			}
 		}
 		
-		PreparedStatement ps = null;
-		try {
-			logger.debug("Create sql is: "+table.getCreateSQL());
-			ps = getConnection().prepareStatement(table.getCreateSQL());
-			for(T entity : entities) {
-				if(!isValid(entity)) {
-					logger.warn("Entity: "+entity+" is not valid, so not persisting");
-					continue;
+		PreparedStatement<T, ID> ps = new PreparedStatement<T, ID>(dataSource);
+		entities = ps.handlePreparedStatementByList(table.getCreateSQL(), entities, new PreparedStatementExecutor<T, ID>() {
+
+			@Override
+			public Iterable<T> executeStatement(java.sql.PreparedStatement ps, Iterable<? extends T> entities) throws HyperDAOException {
+				try {
+					for(T entity : entities) {
+						if(!isValid(entity)) {
+							logger.warn("Entity: "+entity+" is not valid, so not persisting");
+							continue;
+						}
+						populateCreate(entity, ps);
+						ps.addBatch();
+					}
+					ps.executeBatch();
+				} catch (Exception e) {
+					logger.debug("Unable to insert entity: "+entities, e);
+					throw new HyperDAOException("Unable to insert entity: "+entities, e);
 				}
-				populateCreate(entity, ps);
-				ps.addBatch();
+				return (Iterable<T>) entities;
 			}
-			ps.executeBatch();
-		} catch (SQLException e) {
-			logger.error("Unable to save entities: "+entities, e);
-			throw new HyperDAOException("Unable to save entities: "+entities, e);
-		} catch (Exception e) {
-			logger.error("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
-			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
-		} finally {
-			DBUtil.closeStatement(ps);
-		}
+		});
+		
 		return (Iterable<T>) entities;
 	}
 
@@ -155,22 +160,22 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 		
 //		StringBuilder sql = new StringBuilder(table.getUpdateSQL());
 		
-		PreparedStatement ps = null;
-		try {
-			logger.debug("SQL to execute: "+table.getUpdateSQL());
-			ps = getConnection().prepareStatement(table.getUpdateSQL());
-			populateSave(entity, ps, true);
-			int updatedCount = ps.executeUpdate();
-			logger.debug("Updated "+updatedCount+" records for entity: "+entity);
-		} catch (SQLException e) {
-			logger.error("Unable to save entity: " + entity, e);
-			throw new HyperDAOException("Unable to save entity: " + entity, e);
-		} catch (Exception e) {
-			logger.error("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
-			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
-		} finally {
-			DBUtil.closeStatement(ps);
-		}
+		PreparedStatement<T, ID> ps = new PreparedStatement<T, ID>(dataSource);
+		ps.handlePreparedStatement(table.getUpdateSQL(), entity, new PreparedStatementExecutor<T, ID>() {
+
+			@Override
+			public T executeStatement(java.sql.PreparedStatement ps, T entity) throws HyperDAOException {
+				try {
+					populateSave(entity, ps, true);
+					int updatedCount = ps.executeUpdate();
+					logger.debug("Updated "+updatedCount+" records for entity: "+entity);
+				} catch (Exception e) {
+					logger.debug("Unable to update entity: "+entity, e);
+					throw new HyperDAOException("Unable to update entity: "+entity, e);
+				}
+				return entity;
+			}
+		});
 		
 		logger.debug("Exit from update(entity) with entity: "+entity);
 		return  (S) entity;
@@ -191,29 +196,29 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 			}
 		}
 		
-		PreparedStatement ps = null;
-		try {
-			logger.debug("SQL to execute: "+table.getUpdateSQL());
-			ps = getConnection().prepareStatement(table.getUpdateSQL());
-			for(T entity : entities) {
-				logger.debug("Adding entity:"+entity+" to batch");
-				if(!isValid(entity)) {
-					logger.warn("Entity is not valid, so not updating");
-					continue;
+		PreparedStatement<T, ID> ps = new PreparedStatement<T, ID>(dataSource);
+		ps.handlePreparedStatementByList(table.getUpdateSQL(), entities, new PreparedStatementExecutor<T, ID>() {
+
+			@Override
+			public Iterable<T> executeStatement(java.sql.PreparedStatement ps, Iterable<? extends T> entities) throws HyperDAOException {
+				try {
+					for(T entity : entities) {
+						logger.debug("Adding entity:"+entity+" to batch");
+						if(!isValid(entity)) {
+							logger.warn("Entity is not valid, so not updating");
+							continue;
+						}
+						populateSave(entity, ps, true);
+						ps.addBatch();
+					}
+					ps.executeBatch();
+				} catch (Exception e) {
+					logger.debug("Unable to update entity: "+entities, e);
+					throw new HyperDAOException("Unable to update entity: "+entities, e);
 				}
-				populateSave(entity, ps, true);
-				ps.addBatch();
+				return (Iterable<T>) entities;
 			}
-			ps.executeBatch();
-		} catch (SQLException e) {
-			logger.error("Unable to save entities: " + entities, e);
-			throw new HyperDAOException("Unable to save entities: " + entities, e);
-		} catch (Exception e) {
-			logger.error("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
-			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entities: "+entities, e);
-		} finally {
-			DBUtil.closeStatement(ps);
-		}
+		});
 		
 		logger.debug("Exit from update(entities) with: "+entities);
 		return (Iterable<T>) entities;
@@ -230,33 +235,33 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 			throw new HyperDAOException("Table relation is not set up");
 		}
 		
-		StringBuilder sql = new StringBuilder(table.getEagerReadSQL());
+//		StringBuilder sql = new StringBuilder(table.getEagerReadSQL());
+		StringBuilder sql = new StringBuilder(table.getLazyReadSQL());
 		
 		sql.append(SQLConstants.SQL_WHERE);
 		sql.append(table.getPrimaryKey().getColumnName());
 		sql.append(SQLConstants.SQL_EQUAL_PARAMETER);
 		
-		T entity = null;
-
-		PreparedStatement ps = null;
-		try {
-			logger.debug("SQL to execute: "+sql.toString());
-			ps = getConnection().prepareStatement(sql.toString());
-			setParam(id, ps, 0, id.getClass());
-			ResultSet rs = ps.executeQuery();
-			if(rs.next()) {
-				logger.debug("Populating entity");
-				entity = (T) populateEntity(rs, table.getName(), null, table, null);
+		PreparedStatement<T, ID> ps = new PreparedStatement<T, ID>(dataSource);
+		T entity = ps.handlePreparedStatementById(id, sql.toString(), new PreparedStatementExecutor<T, ID>() {
+			
+			@Override
+			public T executeStatementById(final ID id, java.sql.PreparedStatement ps) throws HyperDAOException {
+				T entity = null;
+				try {
+					setParam(id, ps, 0, id.getClass());
+					ResultSet rs = ps.executeQuery();
+					if(rs.next()) {
+						logger.debug("Populating entity");
+						entity = (T) populateEntity(rs, table.getName(), null, table, null);
+					}
+				} catch (Exception e) {
+					logger.debug("Unable to read entity by id: "+id, e);
+					throw new HyperDAOException("Unable to read entity by id: "+id, e);
+				}
+				return entity;
 			}
-		} catch (SQLException e) {
-			logger.error("Unable to retrieve entity by id: " + id, e);
-			throw new HyperDAOException("Unable to retrieve entity by id: " + id, e);
-		} catch(Exception e) {
-			logger.error("Unable to retrieve values to populate preparedStatement for id: "+id, e);
-			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for id: "+id, e);
-		} finally {
-			DBUtil.closeStatement(ps);
-		}
+		});
 		
 		logger.debug("Exit from read(id) with entity: "+entity);
 		return entity;
@@ -274,44 +279,50 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 		} else if(table == null && model != null) {
 			registerTable((Class<T>) model.getClass());
 		}
-		List<T> retList = null;
 		
-		StringBuilder sql = new StringBuilder(table.getEagerReadSQL());
+		StringBuilder sql = new StringBuilder(table.getLazyReadSQL());
 		
-		PreparedStatement ps = null;
-		try {
-			if(model != null) {
-				logger.debug("Adding search criteria based on model: "+model);
+		if(model != null) {
+			logger.debug("Adding search criteria based on model: "+model);
+			try {
 				appendSearchCriteria(model, sql);
+			} catch (Exception e) {
+				logger.error("Unable to populate search criteria for the SQL", e);
+				throw new HyperDAOException("Unable to populate search criteria for the SQL", e);
 			}
-			logger.debug("SQL to execute: "+sql.toString());
-			ps = getConnection().prepareStatement(sql.toString());
-			if(model != null) {
-				logger.debug("Populating search criteria based on model: "+model);
-				populateSearchCriteria(model, ps, 0);
-			}
-			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				logger.debug("Populating entity");
-				if(retList == null) {
-					retList = new ArrayList<T>();
-				}
-				T entity = (T) populateEntity(rs, table.getName(), null, table, null);
-				if(entity != null) {
-					retList.add(entity);
-				}
-			}
-			
-			logger.debug("Found "+(retList == null ? 0 : retList.size())+" entities to return");
-		} catch (SQLException e) {
-			logger.error("Unable to retrieve entity by model: " + model, e);
-			throw new HyperDAOException("Unable to retrieve entity by model: " + model, e);
-		} catch (Exception e) {
-			logger.error("Unable to retrieve values to populate preparedStatement for model: "+model, e);
-			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for model: "+model, e);
-		} finally {
-			DBUtil.closeStatement(ps);
 		}
+		logger.debug("SQL to execute: "+sql.toString());
+		
+		PreparedStatement<T, ID> ps = new PreparedStatement<T, ID>(dataSource);
+		Iterable<T> retList = ps.handlePreparedStatementReturnIterable(sql.toString(), model, new PreparedStatementExecutor<T, ID>() {
+
+			public Iterable<T> executeStatement(T model, java.sql.PreparedStatement ps) throws HyperDAOException {
+				List<T> retList = null;
+				try {
+					if(model != null) {
+						logger.debug("Populating search criteria based on model: "+model);
+						populateSearchCriteria(model, ps, 0);
+					}
+					ResultSet rs = ps.executeQuery();
+					while(rs.next()) {
+						logger.debug("Populating entity");
+						if(retList == null) {
+							retList = new ArrayList<T>();
+						}
+						T entity = (T) populateEntity(rs, table.getName(), null, table, null);
+						if(entity != null) {
+							retList.add(entity);
+						}
+					}
+					
+					logger.debug("Found "+(retList == null ? 0 : retList.size())+" entities to return");
+				} catch (Exception e) {
+					logger.debug("Unable to retrieve entity by model: " + model, e);
+					throw new HyperDAOException("Unable to retrieve entity by model: " + model, e);
+				}
+				return retList;
+			}
+		});
 		
 		logger.debug("Exit from read(model) with list: "+retList);
 		return retList;
@@ -334,25 +345,31 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	public void delete(T entity) throws HyperDAOException {
 		logger.debug("Entry into delete with entity: "+entity);
 		StringBuilder sql = new StringBuilder(table.getDeleteSQL());
-		
-		PreparedStatement ps = null;
 		try {
 			appendSearchCriteria(entity, sql);
-			logger.debug("SQL to execute: "+sql.toString());
-			ps = getConnection().prepareStatement(sql.toString());
-			populateSearchCriteria(entity, ps, 0);
-			int numDeleted = ps.executeUpdate();
-			
-			logger.debug("Deleted: "+numDeleted+" entities based on model: "+entity);
-		} catch (SQLException e) {
-			logger.error("Unable to save entity: " + entity, e);
-			throw new HyperDAOException("Unable to save entity: " + entity, e);
 		} catch (Exception e) {
-			logger.error("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
-			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entity: "+entity, e);
-		} finally {
-			DBUtil.closeStatement(ps);
-		}
+			logger.error("Unable to populate search criteria", e);
+			throw new HyperDAOException("Unable to populate search criteria", e);
+		} 
+		logger.debug("SQL to execute: "+sql.toString());
+		
+		PreparedStatement<T, ID> ps = new PreparedStatement<T, ID>(dataSource);
+		ps.handlePreparedStatement(sql.toString(), entity, new PreparedStatementExecutor<T, ID>() {
+
+			public T executeStatement(java.sql.PreparedStatement ps, T entity) throws HyperDAOException {
+				try {
+					populateSearchCriteria(entity, ps, 0);
+					int numDeleted = ps.executeUpdate();
+					
+					logger.debug("Deleted: "+numDeleted+" entities based on model: "+entity);
+				} catch (Exception e) {
+					logger.debug("Unable to delete entity: " + entity, e);
+					throw new HyperDAOException("Unable to delete entity: " + entity, e);
+				}
+				return null;
+			}
+		});
+		
 		logger.debug("Exit from delete(entity)");
 	}
 
@@ -369,28 +386,27 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 		sql.append(table.getPrimaryKey().getColumnName());
 		sql.append(SQLConstants.SQL_EQUAL_PARAMETER);
 		
-		PreparedStatement ps = null;
-		try {
-			logger.debug("SQL to execute: "+sql.toString());
-			ps = getConnection().prepareStatement(sql.toString());
-			for(T entity : entities) {
-				logger.debug("Adding entity: "+entity+" to batch");
-				ID id = (ID) table.getPrimaryKey().getDataRetrievalMethod().invoke(entity);
-				setParam(id, ps, 0, table.getPrimaryKey().getColumnType());
-				ps.addBatch();
+		PreparedStatement<T, ID> ps = new PreparedStatement<T, ID>(dataSource);
+		ps.handlePreparedStatementByList(sql.toString(), entities, new PreparedStatementExecutor<T, ID>() {
+
+			public Iterable<T> executeStatement(java.sql.PreparedStatement ps, Iterable<? extends T> entities) throws HyperDAOException {
+				try {
+					for(T entity : entities) {
+						logger.debug("Adding entity: "+entity+" to batch");
+						ID id = (ID) table.getPrimaryKey().getDataRetrievalMethod().invoke(entity);
+						setParam(id, ps, 0, table.getPrimaryKey().getColumnType());
+						ps.addBatch();
+					}
+					
+					ps.executeBatch();
+				} catch (Exception e) {
+					logger.debug("Unable to delete entity: " + entities, e);
+					throw new HyperDAOException("Unable to delete entity: " + entities, e);
+				}
+				return null;
 			}
-			
-			ps.executeBatch();
-			
-		} catch (SQLException e) {
-			logger.error("Unable to save entity: " + entities, e);
-			throw new HyperDAOException("Unable to save entity: " + entities, e);
-		} catch (Exception e) {
-			logger.error("Unable to retrieve values to populate preparedStatement for entity: "+entities, e);
-			throw new HyperDAOException("Unable to retrieve values to populate preparedStatement for entity: "+entities, e);
-		}  finally {
-			DBUtil.closeStatement(ps);
-		}
+		});
+		
 		logger.debug("Exit from delete(entities)");
 	}
 
@@ -400,19 +416,22 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 //	@Override
 	public void deleteAll() throws HyperDAOException {
 		logger.debug("Entry into deleteAll");
-		PreparedStatement ps = null;
-		try {
-			logger.debug("Executing query: "+table.getDeleteSQL());
-			ps = getConnection().prepareStatement(table.getDeleteSQL());
-			int numDeleted = ps.executeUpdate();
-			
-			logger.debug("Deleted "+numDeleted+" entities from table: "+table.getName());
-		} catch (SQLException e) {
-			logger.error("Unable to delete all entities", e);
-			throw new HyperDAOException("Unable to delete all entities", e);
-		} finally {
-			DBUtil.closeStatement(ps);
-		}
+		
+		PreparedStatement<T, ID> ps = new PreparedStatement<T, ID>(dataSource);
+		ps.handlePreparedStatement(table.getDeleteSQL(), null, new PreparedStatementExecutor<T, ID>() {
+
+			public T executeStatement(java.sql.PreparedStatement ps, T entity) throws HyperDAOException {
+				try {
+					int numDeleted = ps.executeUpdate();
+					
+					logger.debug("Deleted "+numDeleted+" entities from table: "+table.getName());
+				} catch (Exception e) {
+					logger.debug("Unable to delete all", e);
+					throw new HyperDAOException("Unable to delete all", e);
+				}
+				return null;
+			}
+		});		
 		logger.debug("Exit from DeleteAll");
 	}
 
@@ -464,16 +483,16 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 			setObjectValue(entity, value, column);
 		}
 		
-		if(table.getForeignKeys() != null && table.getForeignKeys().size() > 0) {
-			logger.debug("Table has foreign key references");
-			for(ForeignKey fk : table.getForeignKeys()) {
-				logger.debug("Populating FK table: "+fk.getReferenceTable().getName()+" reference by "+table.getName()+"."+fk.getKeyColumn().getColumnName());
-				String fkTableAlias = TableRetrievalService.getFkTableAlias(table, fk);
-				String fkColumnAliasPrefix = TableRetrievalService.getFkColumnPrefix(table, fk);
-				Object fkEntity = populateEntity(rs, fkTableAlias, fkColumnAliasPrefix, fk.getReferenceTable(), usedTableAliases);
-				setFKObjectValue(entity, fkEntity, fk.getKeyColumn());
-			}
-		}
+//		if(table.getForeignKeys() != null && table.getForeignKeys().size() > 0) {
+//			logger.debug("Table has foreign key references");
+//			for(ForeignKey fk : table.getForeignKeys()) {
+//				logger.debug("Populating FK table: "+fk.getReferenceTable().getName()+" reference by "+table.getName()+"."+fk.getKeyColumn().getColumnName());
+//				String fkTableAlias = TableRetrievalService.getFkTableAlias(table, fk);
+//				String fkColumnAliasPrefix = TableRetrievalService.getFkColumnPrefix(table, fk);
+//				Object fkEntity = populateEntity(rs, fkTableAlias, fkColumnAliasPrefix, fk.getReferenceTable(), usedTableAliases);
+//				setFKObjectValue(entity, fkEntity, fk.getKeyColumn());
+//			}
+//		}
 		
 		logger.debug("Exit from populateEntity with entity: "+entity);
 		return entity;
@@ -491,8 +510,8 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * 
 	 * @return
 	 */
-	protected Connection getConnection() {
-		return connection;
+	protected DataSource getDataSource() {
+		return dataSource;
 	}
 	
 	/**
@@ -519,7 +538,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @throws IllegalArgumentException 
 	 * @throws SQLException 
 	 */
-	protected int populateCreate(T entity, PreparedStatement ps) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SQLException {
+	protected int populateCreate(T entity, java.sql.PreparedStatement ps) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SQLException {
 		logger.debug("Entry into populateCreate with entity: "+entity);
 		int count = 0;
 		Column primaryKeyCol = null;
@@ -550,7 +569,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 
 	/**
 	 * @param entity - object to persist
-	 * @param ps - {@link PreparedStatement} being built
+	 * @param ps - {@link java.sql.PreparedStatement} being built
 	 * @param methods - ordered list of methods to ensure that the correct columns get updated
 	 * @param idOnly - indicator as to if the save SQL is updating based on only the entity's ID, or by a list of criteria
 	 * @throws SQLException 
@@ -558,7 +577,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
 	 */
-	protected int populateSave(T entity, PreparedStatement ps, boolean idOnly) throws SQLException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+	protected int populateSave(T entity, java.sql.PreparedStatement ps, boolean idOnly) throws SQLException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 		logger.debug("Entry into populateSave with entity: "+entity.toString()+" idOnly: "+idOnly);
 		int count = 0;
 		Column primaryKeyCol = null;
@@ -595,7 +614,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	 * @param ps
 	 * @throws SQLException 
 	 */
-	protected int setParam(Object o, PreparedStatement ps, int count, Type columnType) throws SQLException {
+	protected int setParam(Object o, java.sql.PreparedStatement ps, int count, Type columnType) throws SQLException {
 		logger.debug("Entry into setParam with count: "+count);
 		if(o == null) {
 			logger.debug("Object is null");
@@ -618,7 +637,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
      * @return
 	 * @throws SQLException 
      */
-    private int setNull(PreparedStatement ps, int count, Type columnType) throws SQLException {
+    private int setNull(java.sql.PreparedStatement ps, int count, Type columnType) throws SQLException {
         if(columnType == String.class) {
             logger.debug("Column is of type String");
             ps.setNull(++count, Types.VARCHAR);
@@ -660,7 +679,7 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
      * @param count
 	 * @throws SQLException 
      */
-    private int setPrimitiveParam(Object o, PreparedStatement ps, int count) throws SQLException {
+    private int setPrimitiveParam(Object o, java.sql.PreparedStatement ps, int count) throws SQLException {
         if(o instanceof String) {
             logger.debug("Object is of type String");
             ps.setString(++count, (String)o);
@@ -808,15 +827,15 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 	}
 
 	/**
-	 * Populate a {@link PreparedStatement} based on the model entity
+	 * Populate a {@link java.sql.PreparedStatement} based on the model entity
 	 * @param entity - model entity
-	 * @param ps - {@link PreparedStatement} to set values to
+	 * @param ps - {@link java.sql.PreparedStatement} to set values to
 	 * @throws InvocationTargetException 
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
 	 * @throws SQLException 
 	 */
-	protected int populateSearchCriteria(T entity, PreparedStatement ps, int count) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SQLException {
+	protected int populateSearchCriteria(T entity, java.sql.PreparedStatement ps, int count) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException, SQLException {
 		logger.debug("Entry into populateSearchCriteria for table: "+entity.toString()+" with count: "+count);
 		for(Column column : table.getColumns()) {
 			logger.debug("Checking if column: "+column.getColumnName()+" needs to be populated");

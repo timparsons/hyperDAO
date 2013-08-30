@@ -15,6 +15,9 @@ public class StringUtil {
 	}
 	
 	public static String printString(char[] s) {
+		if(s == null) {
+			return null;
+		}
 		return s.toString();
 	}
 

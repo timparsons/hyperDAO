@@ -3,6 +3,7 @@ package com.hyperdao.generic.model;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.criteria.JoinType;
 
 /**
  * A representation of a SQL foreign key
@@ -15,6 +16,7 @@ public class ForeignKey {
 	private Column referenceColumn;
 	private Column keyColumn;
 	private ReferenceType referenceType;
+	private JoinType joinType;
 	
 	public enum ReferenceType {
 		MANY_TO_ONE(ManyToOne.class),
@@ -113,6 +115,12 @@ public class ForeignKey {
 		this.referenceType = referenceType;
 	}
 	
+	public JoinType getJoinType() {
+		return joinType;
+	}
+	public void setJoinType(JoinType joinType) {
+		this.joinType = joinType;
+	}
 	@Override
 	public int hashCode() {
 		final int prime = 31;
