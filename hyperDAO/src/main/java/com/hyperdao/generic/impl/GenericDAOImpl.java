@@ -32,6 +32,7 @@ import com.hyperdao.generic.model.Table;
 import com.hyperdao.generic.service.TableRetrievalService;
 import com.hyperdao.util.DBUtil;
 import com.hyperdao.util.DateUtil;
+import com.hyperdao.util.StringUtil;
 import com.hyperdao.util.constant.SQLConstants;
 
 /**
@@ -443,6 +444,10 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
 		return table;
 	}
 	
+	protected Table getTable(Class<?> tableClass) {
+		return TableRetrievalService.registerTable(tableClass);
+	}
+	
 	/**
 	 * For a {@link ResultSet}, populate the related Object based on the table
 	 * @param rs - results of the 
@@ -710,6 +715,12 @@ public abstract class GenericDAOImpl<T, ID extends Serializable> implements Gene
         } else if(o instanceof Boolean) {
             logger.debug("Object is of type Boolean");
             ps.setBoolean(++count, (Boolean)o);
+        } else if(o instanceof char[]) {
+        	logger.debug("Object is of type char[]");
+        	ps.setString(++count, StringUtil.printString((char[])o));
+        } else if(o instanceof byte[]) {
+        	logger.debug("Object is of type byte[]");
+        	ps.setBytes(++count, (byte[])o);
         }
         
         return count;

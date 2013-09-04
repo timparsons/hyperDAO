@@ -18,7 +18,11 @@ public class StringUtil {
 		if(s == null) {
 			return null;
 		}
-		return s.toString();
+		StringBuilder builder = new StringBuilder();
+		for(char i : s) {
+			builder.append(i);
+		}
+		return builder.toString();
 	}
 
 }
